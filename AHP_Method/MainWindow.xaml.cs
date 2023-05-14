@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -14,6 +15,7 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
+using System.Xml.Linq;
 
 namespace AHP_Method
 {
@@ -23,6 +25,20 @@ namespace AHP_Method
     public partial class MainWindow : Window
     {
         Parameter rootParameter = new Parameter("Problem odločanja");
+        List<Parameter> parametri;
+
+         static bool HasChild(Parameter parameter)
+        {
+            if (parameter.Children.Count > 0)
+            {
+                return true;
+            }
+            else
+            {
+                return false;
+            }
+        }
+        
         public MainWindow()
         {
             InitializeComponent();
@@ -42,12 +58,22 @@ namespace AHP_Method
                     Parameter selectedParameter = treeView.SelectedItem as Parameter;
                     if (selectedParameter != null)
                     {
+                        if (selectedParameter.Children.Any(p => p.Name.ToLower() == newParameterName.ToLower()))
+                        {
+                            MessageBox.Show($"Parameter z imenom '{newParameterName}' že obstaja!");
+                            return;
+                        }
                         selectedParameter.Children.Add(newChild);
                         newChild.Parent = selectedParameter;
                     }
                 }
                 else
                 {
+                    if (rootParameter.Children.Any(p => p.Name.ToLower() == newParameterName.ToLower()))
+                    {
+                        MessageBox.Show($"Parameter z imenom '{newParameterName}' že obstaja!");
+                        return;
+                    }
                     rootParameter.Children.Add(newChild);
                     newChild.Parent = rootParameter;
                 }
@@ -81,6 +107,73 @@ namespace AHP_Method
                 ((ObservableCollection<Parameter>)DataContext).Remove(selectedParameter);
             }
         }
+
+        private List<Parameter> GetParameterList(ObservableCollection<Parameter> rootCollection)
+        {
+            var parameterList = new List<Parameter>();
+
+            foreach (var parameter in rootCollection)
+            {
+                parameterList.Add(parameter);
+                parameterList.AddRange(GetChildParameters(parameter));
+            }
+
+            return parameterList;
+        }
+
+        private List<Parameter> GetChildParameters(Parameter parameter)
+        {
+            var parameterList = new List<Parameter>();
+
+            foreach (var child in parameter.Children)
+            {
+                parameterList.Add(child);
+                parameterList.AddRange(GetChildParameters(child));
+            }
+
+            return parameterList;
+        }
+
+        private void naprejNaParametre_Click(object sender, RoutedEventArgs e)
+        {
+             var parameterList = GetParameterList((ObservableCollection<Parameter>)DataContext);
+            parametri = parameterList;
+            
+            myTabControl.SelectedIndex = 1;
+        }
+
+        //private void primerjavaParametrovPoParih()
+        //{
+        //    var parameterList = GetParameterList((ObservableCollection<Parameter>)DataContext);
+        //    parametri = parameterList;
+        //    var parameterPairs = new List<ParameterPair>();
+        //    for (int i = 0; i < parameterList.Count; i++)
+        //    {
+        //        for (int j = i + 1; j < parameterList.Count; j++)
+        //        {
+        //            parameterPairs.Add(new ParameterPair(parameterList[i], parameterList[j]));
+        //        }
+        //    }
+        //    myTabControl.SelectedIndex = 2;
+        //    DataContext = parameterPairs;
+        //}
+
+        //neke za graf
+        //private void generateGraf_Click(object sender, RoutedEventArgs e)
+        //{
+        //    string dotSource = GenerateDotSource(); // Generate the DOT source code
+        //    byte[] graphImageBytes = GenerateGraphImage(dotSource); // Generate the graph image
+
+        //    // Display the graph image
+        //    BitmapImage bitmapImage = new BitmapImage();
+        //    bitmapImage.BeginInit();
+        //    bitmapImage.StreamSource = new MemoryStream(graphImageBytes);
+        //    bitmapImage.CacheOption = BitmapCacheOption.OnLoad;
+        //    bitmapImage.EndInit();
+        //    graphImage.Source = bitmapImage;
+        //}
+
+
 
 
         //private double[,] GeneratePairwiseComparisonMatrix(Parameter nodeParameter)
