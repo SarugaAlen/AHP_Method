@@ -31,7 +31,6 @@ namespace AHP_Method
         }
 
 
-
         private void dodajParameter_Click(object sender, RoutedEventArgs e)
         {
             string newParameterName = newParameterTextBox.Text;
@@ -82,5 +81,37 @@ namespace AHP_Method
                 ((ObservableCollection<Parameter>)DataContext).Remove(selectedParameter);
             }
         }
+
+
+        //private double[,] GeneratePairwiseComparisonMatrix(Parameter nodeParameter)
+        //{
+        //    int size = nodeParameter.GetSubtreeSize();
+        //    double[,] matrix = new double[size, size];
+        //    List<Parameter> parameters = nodeParameter.GetSubtree();
+
+        //    for (int i = 0; i < size; i++)
+        //    {
+        //        matrix[i, i] = 1;
+        //        for (int j = i + 1; j < size; j++)
+        //        {
+        //            double comparison = 0;
+        //            if (parameters[i] == nodeParameter || parameters[j] == nodeParameter) // Compare the node parameter with its immediate children
+        //            {
+        //                comparison = GetComparisonFromUser(parameters[i], parameters[j]);
+        //            }
+        //            else // Recursively compare the subtree of each child
+        //            {
+        //                double[,] childMatrix = GeneratePairwiseComparisonMatrix(parameters[i]);
+        //                double[,] subchildMatrix = GeneratePairwiseComparisonMatrix(parameters[j]);
+        //                comparison = CalculateComparisonFromMatrices(childMatrix, subchildMatrix);
+        //            }
+        //            matrix[i, j] = comparison;
+        //            matrix[j, i] = 1.0 / comparison;
+        //        }
+        //    }
+
+        //    return matrix;
+        //}
+
     }
 }

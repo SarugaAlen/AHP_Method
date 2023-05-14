@@ -14,7 +14,7 @@
 
         </Grid.ColumnDefinitions>
 
-        <TabControl>
+        <TabControl x:Name="myTabControl">
             <TabItem Header="Domov" FontSize="23">
                 <Border BorderBrush="Black" BorderThickness="2">
                     <Grid Background="LightGray">
@@ -37,7 +37,7 @@
                             </TreeView>
                         </StackPanel>
                         <StackPanel Grid.Row="0" Grid.Column="2" Orientation="Vertical" HorizontalAlignment="Center" Margin="0,5,0,5">
-                            <TextBlock Text="Dodaj parameter:" VerticalAlignment="Center" Margin="0,10,20,0" FontWeight="Bold" FontSize="30"/>
+                            <TextBlock Text="Dodaj parameter:" VerticalAlignment="Center" Margin="0,10,20,0" FontWeight="Bold" FontSize="30" HorizontalAlignment="Center"/>
                             <TextBox x:Name="newParameterTextBox" Height="50" Width="300" FontSize="40" Margin="0 20 0 0" />
                             <StackPanel Orientation="Horizontal">
                                 <Button x:Name="dodajParameter" Content="Dodaj" Margin="0 20 0 0" Click="dodajParameter_Click" Height="50" Width="100" HorizontalAlignment="Left"></Button>

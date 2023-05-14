@@ -1,0 +1,142 @@
+// Create a method to traverse the TreeView hierarchy and generate the pairwise comparison matrix
+private double[,] GeneratePairwiseComparisonMatrix(Parameter parameter)
+{
+    int size = parameter.GetSubtreeSize();
+    double[,] matrix = new double[size, size];
+    List<Parameter> parameters = parameter.GetSubtree();
+
+    for (int i = 0; i < size; i++)
+    {
+        matrix[i, i] = 1;
+        for (int j = i + 1; j < size; j++)
+        {
+            double comparison = GetComparisonFromUser(parameters[i], parameters[j]); // Get user input for the pairwise comparison
+            matrix[i, j] = comparison;
+            matrix[j, i] = 1.0 / comparison;
+        }
+    }
+
+    return matrix;
+}
+
+// Use the pairwise comparison matrix to calculate the weights of each item using the AHP algorithm
+private void CalculateWeights(Parameter parameter)
+{
+    double[,] matrix = GeneratePairwiseComparisonMatrix(parameter);
+    double[] weights = AHP.CalculateWeights(matrix); // Call a method that implements the AHP algorithm to calculate the weights
+
+    int i = 0;
+    foreach (Parameter p in parameter.GetSubtree())
+    {
+        p.Weight = weights[i];
+        i++;
+    }
+}
+
+// Add a button to your UI that calls the CalculateWeights method for the root parameter
+private void calculateWeightsButton_Click(object sender, RoutedEventArgs e)
+{
+    CalculateWeights(rootParameter);
+}
+
+// Display the calculated weights in the DataGrids
+private void DisplayWeights(Parameter parameter)
+{
+    List<Parameter> parameters = parameter.GetSubtree();
+    DataTable table = new DataTable();
+
+    // Add columns for the parameter name and weight
+    table.Columns.Add(new DataColumn("Parameter", typeof(string)));
+    table.Columns.Add(new DataColumn("Weight", typeof(double)));
+
+    // Add rows for each parameter and its weight
+    foreach (Parameter p in parameters)
+    {
+        DataRow row = table.NewRow();
+        row["Parameter"] = p.Name;
+        row["Weight"] = p.Weight;
+        table.Rows.Add(row);
+    }
+
+    // Display the table in the appropriate DataGrid on your UI
+    if (parameter == rootParameter)
+    {
+        rootParameterDataGrid.ItemsSource = table.DefaultView;
+    }
+    else
+    {
+        // Find the parent DataGrid for the parameter and display the table in it
+        // ...
+    }
+}
+
+// Add a button to your UI that calls the DisplayWeights method for the root parameter
+private void displayWeightsButton_Click(object sender, RoutedEventArgs e)
+{
+    DisplayWeights(rootParameter);
+}
+
+
+
+za nek tuple 
+private Tuple<double[,], TabItem> GeneratePairwiseComparisonMatrixTab(Parameter parameter)
+{
+    int size = parameter.GetSubtreeSize();
+    double[,] matrix = new double[size, size];
+    List<Parameter> parameters = parameter.GetSubtree();
+
+    for (int i = 0; i < size; i++)
+    {
+        matrix[i, i] = 1;
+        for (int j = i + 1; j < size; j++)
+        {
+            double comparison = GetComparisonFromUser(parameters[i], parameters[j]); // Get user input for the pairwise comparison
+            matrix[i, j] = comparison;
+            matrix[j, i] = 1.0 / comparison;
+        }
+    }
+
+    var dataGrid = new DataGrid
+    {
+        ItemsSource = parameter.Children,
+        AutoGenerateColumns = false,
+        CanUserAddRows = false,
+        CanUserDeleteRows = false,
+        CanUserResizeRows = false
+    };
+
+    dataGrid.Columns.Add(new DataGridTextColumn
+    {
+        Header = "",
+        Binding = new Binding("Name"),
+        IsReadOnly = true
+    });
+
+    for (int i = 0; i < size; i++)
+    {
+        var columnIndex = i;
+        dataGrid.Columns.Add(new DataGridTextColumn
+        {
+            Header = parameters[i].Name,
+            Binding = new Binding($"Children[{i}].Value"),
+            CanUserSort = false,
+            Width = new DataGridLength(1, DataGridLengthUnitType.Star),
+            CellStyle = new Style(typeof(DataGridCell))
+            {
+                Setters = {
+                    new Setter(DataGridCell.IsReadOnlyProperty, new Binding($"Children[{i}].IsReadOnly")),
+                    new Setter(DataGridCell.BackgroundProperty, new Binding($"Children[{i}].Background"))
+                }
+            }
+        });
+    }
+
+    var tabItem = new TabItem
+    {
+        Header = parameter.Name,
+        Content = dataGrid
+    };
+
+    return Tuple.Create(matrix, tabItem);
+}
+
