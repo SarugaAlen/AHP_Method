@@ -138,10 +138,22 @@ namespace AHP_Method
         {
              var parameterList = GetParameterList((ObservableCollection<Parameter>)DataContext);
             parametri = parameterList;
-            
+            PairwiseComparison();
             myTabControl.SelectedIndex = 1;
         }
 
+
+        private void PairwiseComparison() //Iteracija skozi parametre kjer nato starše dodam v nov list
+        {
+            List<Parameter> parents = new List<Parameter>();
+            foreach (Parameter p in parametri)
+            {
+                if(HasChild(p))
+                {
+                    parents.Add(p);
+                }
+            }    
+        }
         //private void primerjavaParametrovPoParih()
         //{
         //    var parameterList = GetParameterList((ObservableCollection<Parameter>)DataContext);
