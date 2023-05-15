@@ -167,15 +167,15 @@ namespace AHP_Method
         }
 
         private void pairwiseComparison2() //Funckija gre skozi vse starse in za vsakega pripravi primerjavo po parih njegovih otrok in ga doda v nov list premerjav
-            // z indexcount bi visal vsakega starsa da bi funckija trajala dokler ni enaka stevila starsev?? in potem uporabnik veca index?
+                                           // z indexcount bi visal vsakega starsa da bi funckija trajala dokler ni enaka stevila starsev?? in potem uporabnik veca index?
         {
-            foreach(Parameter parent in parents)
+            foreach (Parameter parent in parents)
             {
                 indexCount++;
                 var parameterPairs = new List<ParameterPair>();
                 for (int i = 0; i < parent.Children.Count; i++)
                 {
-                    for(int j = i + 1; j < parent.Children.Count; j++)
+                    for (int j = i + 1; j < parent.Children.Count; j++)
                     {
                         var pair = new ParameterPair(parent.Children[i], parent.Children[j]);
                         parameterPairs.Add(pair);
@@ -217,53 +217,54 @@ namespace AHP_Method
 
         private void Nalozi_Click(object sender, RoutedEventArgs e)
         {
-
             if (parents.Count > 0)
             {
                 Parameter parent = parents.First();
                 ObservableCollection<Parameter> children = parent.Children;
-
-                dataGridParameters.Name = parent.Name;
-                dataGridParameters.Columns.Clear();
-                dataGridParameters.AutoGenerateColumns = false;
-
-                foreach (Parameter child in children)
-                {
-                    dataGridParameters.Columns.Add(new DataGridTextColumn()
-                    {
-                        Header = child.Name,
-                        Binding = new Binding($"[{child.Name}]")
-                    });
-
-                }
                 DataTable table = new DataTable();
 
-                // Add a column for each child parameter
+                dataGridParameters.Columns.Clear();
+                dataGridParameters.CanUserAddRows = false;
+                dataGridParameters.CanUserResizeColumns = false;
+                dataGridParameters.AutoGenerateColumns = true;
+
+                // Add the first column for the row headers
+                table.Columns.Add(parent.Name);
+
+                // Add columns for the child parameters
                 foreach (Parameter child in children)
                 {
+                    //dataGridParameters.Columns.Add(new DataGridTextColumn()
+                    //{
+                    //    Header = child.Name,
+                    //    Binding = new Binding($"[{child.Name}]")
+                    //});
+
+                    // Add a column for each child parameter
                     table.Columns.Add(child.Name, typeof(double));
                 }
 
-                // Add a row to the DataTable
-                table.Rows.Add(table.NewRow());
-                
-                // Set the DataTable as the ItemsSource for the DataGrid
+                // Add a row for each child parameter
+                for (int i = 0; i < children.Count; i++)
+                {
+                    DataRow row = table.NewRow();
+                    row[0] = children[i].Name; // Set the value of the row header column
+                    for (int j = 1; j <= children.Count; j++)
+                    {
+                        if (i == j - 1)
+                        {
+                            row[j] = 1; // Set diagonal cell values to 1
+                        }
+                        else
+                        {
+                            row[j] = 0; // Initialize the values of the other cells to 0
+                        }
+                    }
+                    table.Rows.Add(row);
+                }
+
                 dataGridParameters.ItemsSource = table.DefaultView;
             }
-
-
-            //if (parents.Count > 0)
-            //{
-            //    dataGridParameters.Children.Clear();
-
-            //    foreach (Parameter parent in parents)
-            //    {
-            //        List<ParameterPair> parameterPairs = pairwiseComparison2(parent.Children);
-            //        DataGrid childGrid = new DataGrid();
-            //        childGrid.ItemsSource = parameterPairs;
-            //        dataGridParameters.Children.Add(childGrid);
-            //    }
-            //}
         }
 
         private void Izracunaj_Click(object sender, RoutedEventArgs e)
@@ -274,19 +275,7 @@ namespace AHP_Method
 
         private void nextGrid_Click(object sender, RoutedEventArgs e)
         {
-            //if (parents.Count > 0)
-            //{
-            //    currentParentIndex++;
-            //    if (currentParentIndex >= parents.Count)
-            //    {
-            //        currentParentIndex = 0;
-            //    }
-            //    List<Parameter> children = parents[currentParentIndex].Children;
-            //    dataGridParameters.Children.Clear();
-            //    DataGrid childGrid = new DataGrid();
-            //    childGrid.ItemsSource = children;
-            //    dataGridParameters.Children.Add(childGrid);
-            //}
+            
         }
 
 
