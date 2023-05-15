@@ -41,5 +41,26 @@ namespace AHP_Method.Model
             Name = name;
             Children = new ObservableCollection<Parameter>();
         }
+
+        public bool IsAncestor(Parameter potentialDescendant)
+        {
+            if (Children.Contains(potentialDescendant))
+            {
+                return true;
+            }
+            else
+            {
+                foreach (Parameter child in Children)
+                {
+                    if (child.IsAncestor(potentialDescendant))
+                    {
+                        return true;
+                    }
+                }
+                return false;
+            }
+        }
+
+
     }
 }

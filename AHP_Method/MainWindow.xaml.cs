@@ -1,10 +1,13 @@
 ﻿using AHP_Method.Model;
+using LiveCharts.Wpf.Charts.Base;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Data;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -26,8 +29,13 @@ namespace AHP_Method
     {
         Parameter rootParameter = new Parameter("Problem odločanja");
         List<Parameter> parametri;
+        List<Parameter> parents;
 
-         static bool HasChild(Parameter parameter)
+        public int indexCount = 0;
+        private int currentParentIndex = 0;
+
+
+        static bool HasChild(Parameter parameter)
         {
             if (parameter.Children.Count > 0)
             {
@@ -38,7 +46,8 @@ namespace AHP_Method
                 return false;
             }
         }
-        
+
+
         public MainWindow()
         {
             InitializeComponent();
@@ -136,24 +145,205 @@ namespace AHP_Method
 
         private void naprejNaParametre_Click(object sender, RoutedEventArgs e)
         {
-             var parameterList = GetParameterList((ObservableCollection<Parameter>)DataContext);
+            var parameterList = GetParameterList((ObservableCollection<Parameter>)DataContext);
             parametri = parameterList;
-            PairwiseComparison();
+            SortParents();
             myTabControl.SelectedIndex = 1;
         }
 
 
-        private void PairwiseComparison() //Iteracija skozi parametre kjer nato starše dodam v nov list
+        private void SortParents() //Iteracija skozi parametre kjer nato starše dodam v nov list
         {
-            List<Parameter> parents = new List<Parameter>();
+            parents = new List<Parameter>();
             foreach (Parameter p in parametri)
             {
-                if(HasChild(p))
+                if (HasChild(p))
                 {
                     parents.Add(p);
                 }
-            }    
+            }
+
+            parents.Reverse();
         }
+
+        private void pairwiseComparison2() //Funckija gre skozi vse starse in za vsakega pripravi primerjavo po parih njegovih otrok in ga doda v nov list premerjav
+            // z indexcount bi visal vsakega starsa da bi funckija trajala dokler ni enaka stevila starsev?? in potem uporabnik veca index?
+        {
+            foreach(Parameter parent in parents)
+            {
+                indexCount++;
+                var parameterPairs = new List<ParameterPair>();
+                for (int i = 0; i < parent.Children.Count; i++)
+                {
+                    for(int j = i + 1; j < parent.Children.Count; j++)
+                    {
+                        var pair = new ParameterPair(parent.Children[i], parent.Children[j]);
+                        parameterPairs.Add(pair);
+                    }
+                }
+            }
+        }
+
+        //private void pairwiseComparison()
+        //{
+        //    var parameterPairs = new List<ParameterPair>();
+        //    for (int i = 0; i < parents.Count; i++)
+        //    {
+        //        for (int j = i + 1; j < parents.Count; j++)
+        //        {
+        //            var pair = new ParameterPair(parents[i], parents[j]);
+        //            parameterPairs.Add(pair);
+        //        }
+
+        //        var childrenPairs = new List<ParameterPair>();
+        //        foreach (var child in parents[i].Children)
+        //        {
+        //            for (int k = 0; k < parents.Count; k++)
+        //            {
+        //                if (parents[k] != parents[i] && parents[k].IsAncestor(child))
+        //                {
+        //                    var pair = new ParameterPair(child, parents[k]);
+        //                    childrenPairs.Add(pair);
+        //                }
+        //            }
+        //        }
+
+        //        parameterPairs.AddRange(childrenPairs);
+        //    }
+
+        //    DataContext = parameterPairs;
+        //    myTabControl.SelectedIndex = 2;
+        //}
+
+        private void Nalozi_Click(object sender, RoutedEventArgs e)
+        {
+
+            if (parents.Count > 0)
+            {
+                Parameter parent = parents.First();
+                ObservableCollection<Parameter> children = parent.Children;
+
+                dataGridParameters.Name = parent.Name;
+                dataGridParameters.Columns.Clear();
+                dataGridParameters.AutoGenerateColumns = false;
+
+                foreach (Parameter child in children)
+                {
+                    dataGridParameters.Columns.Add(new DataGridTextColumn()
+                    {
+                        Header = child.Name,
+                        Binding = new Binding($"[{child.Name}]")
+                    });
+
+                }
+                DataTable table = new DataTable();
+
+                // Add a column for each child parameter
+                foreach (Parameter child in children)
+                {
+                    table.Columns.Add(child.Name, typeof(double));
+                }
+
+                // Add a row to the DataTable
+                table.Rows.Add(table.NewRow());
+                
+                // Set the DataTable as the ItemsSource for the DataGrid
+                dataGridParameters.ItemsSource = table.DefaultView;
+            }
+
+
+            //if (parents.Count > 0)
+            //{
+            //    dataGridParameters.Children.Clear();
+
+            //    foreach (Parameter parent in parents)
+            //    {
+            //        List<ParameterPair> parameterPairs = pairwiseComparison2(parent.Children);
+            //        DataGrid childGrid = new DataGrid();
+            //        childGrid.ItemsSource = parameterPairs;
+            //        dataGridParameters.Children.Add(childGrid);
+            //    }
+            //}
+        }
+
+        private void Izracunaj_Click(object sender, RoutedEventArgs e)
+        {
+
+        }
+
+
+        private void nextGrid_Click(object sender, RoutedEventArgs e)
+        {
+            //if (parents.Count > 0)
+            //{
+            //    currentParentIndex++;
+            //    if (currentParentIndex >= parents.Count)
+            //    {
+            //        currentParentIndex = 0;
+            //    }
+            //    List<Parameter> children = parents[currentParentIndex].Children;
+            //    dataGridParameters.Children.Clear();
+            //    DataGrid childGrid = new DataGrid();
+            //    childGrid.ItemsSource = children;
+            //    dataGridParameters.Children.Add(childGrid);
+            //}
+        }
+
+
+        //private void ShowParametersInGrid()
+        //{
+        //    // Get all parameters
+        //    var parameterList = GetParameterList((ObservableCollection<Parameter>)DataContext);
+
+        //    // Sort parents
+        //    SortParents();
+
+        //    // Loop through parents and create a new tab for each
+        //    for (int i = 0; i < parents.Count; i++)
+        //    {
+        //        var parent = parents[i];
+        //        var dataGrid = new DataGrid();
+
+        //        // Add columns to the data grid
+        //        dataGrid.Columns.Add(new DataGridTextColumn
+        //        {
+        //            Header = parent.Name,
+        //            Binding = new Binding($"PairwiseComparisonValues[{i},{i}]"),
+        //            IsReadOnly = true
+        //        });
+
+        //        foreach (var child in parent.Children)
+        //        {
+        //            dataGrid.Columns.Add(new DataGridTextColumn
+        //            {
+        //                Header = child.Name,
+        //                Binding = new Binding($"PairwiseComparisonValues[{parent.Index},{child.Index}]")
+        //            });
+        //        }
+
+        //        // Add rows to the data grid
+        //        for (int row = 0; row < parent.Children.Count; row++)
+        //        {
+        //            var child = parent.Children[row];
+        //            var rowData = new List<double>();
+        //            rowData.Add(1.0 / parameterList.Count); // Add the diagonal element
+        //            for (int col = 0; col < parent.Children.Count; col++)
+        //            {
+        //                rowData.Add(1.0);
+        //            }
+        //            dataGrid.Items.Add(rowData);
+        //        }
+
+        //        // Add the data grid to a new tab
+        //    }
+
+        //    // Select the first tab
+        //}
+
+
+
+
+
         //private void primerjavaParametrovPoParih()
         //{
         //    var parameterList = GetParameterList((ObservableCollection<Parameter>)DataContext);
