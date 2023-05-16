@@ -63,7 +63,6 @@
                         </Grid.ColumnDefinitions>
                         <Label Grid.Row="0" Grid.ColumnSpan="2" Content="Primerjava po parih" FontWeight="Bold" FontSize="25" HorizontalAlignment="Center" ></Label>
                         <StackPanel Grid.Row="0" Grid.ColumnSpan="2" Orientation="Horizontal" HorizontalAlignment="Center">
-                            <Button x:Name="Nalozi" Content="Nalozi" Width="200" Height="50" Click="Nalozi_Click"></Button>
                             <Button x:Name="Izracunaj" Content="Izracunaj" Width="200" Height="50" Margin="50 0 0 0" Click="Izracunaj_Click"></Button>
                             <Button x:Name="nextGrid" Content="Naslednji parameter" Width="250" Height="50" Margin="50 0 0 0" Click="nextGrid_Click"></Button>
                         </StackPanel>
@@ -75,10 +74,33 @@
                                         <ColumnDefinition Width="*"/>
                                     </Grid.ColumnDefinitions>
 
-                                    <StackPanel Grid.Row="1" Grid.Column="0" >
-                                        <DataGrid x:Name="dataGridParameters"  Margin="5" FontSize="25">
+                                    <StackPanel Grid.Row="1" Grid.Column="0">
+                                        <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto">
+                                            <DataGrid x:Name="dataGridParameters" Grid.Column="1" Margin="10" AutoGenerateColumns="False" CanUserAddRows="False" CanUserResizeColumns="False" ItemsSource="{Binding}">
+                                                <DataGrid.Columns>
+                                                    <DataGridTemplateColumn Header="Parameter">
+                                                        <DataGridTemplateColumn.CellTemplate>
+                                                            <DataTemplate>
+                                                                <TextBlock Text="{Binding}" />
+                                                            </DataTemplate>
+                                                        </DataGridTemplateColumn.CellTemplate>
+                                                    </DataGridTemplateColumn>
 
-                                        </DataGrid>
+                                                    <DataGridTemplateColumn Header="Value" Width="*">
+                                                        <DataGridTemplateColumn.CellTemplate>
+                                                            <DataTemplate>
+                                                                <TextBlock Text="{Binding Path=., Mode=OneWay, UpdateSourceTrigger=PropertyChanged}" />
+                                                            </DataTemplate>
+                                                        </DataGridTemplateColumn.CellTemplate>
+                                                        <DataGridTemplateColumn.CellEditingTemplate>
+                                                            <DataTemplate>
+                                                                <TextBox Text="{Binding Path=., Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                                                            </DataTemplate>
+                                                        </DataGridTemplateColumn.CellEditingTemplate>
+                                                    </DataGridTemplateColumn>
+                                                </DataGrid.Columns>
+                                            </DataGrid>
+                                        </ScrollViewer>
                                     </StackPanel>
                                 </Grid>
                             </Border>
@@ -90,9 +112,11 @@
                                             <ColumnDefinition Width="*"/>
                                         </Grid.ColumnDefinitions>
                                         <StackPanel Grid.Column="0">
-                                            <DataGrid Margin="5" FontSize="25">
+                                            <ScrollViewer VerticalScrollBarVisibility="Auto">
+                                                <DataGrid x:Name="dataGridWeights" Margin="5" FontSize="25" MaxWidth="580" MaxHeight="480">
 
-                                            </DataGrid>
+                                                </DataGrid>
+                                            </ScrollViewer>
                                         </StackPanel>
                                     </Grid>
                                 </Border>

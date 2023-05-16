@@ -4,9 +4,11 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Data;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
@@ -32,8 +34,24 @@ namespace AHP_Method
         List<Parameter> parents;
 
         private int currentIndex = 0;
+        private int currentWeightIndex = 0;
+
+        private DataTable tableParameters;
+        private DataTable tableWeights;
+        private List<List<double>> savedTable;
 
 
+        /// <summary>
+        /// Preveri, ali parameter vsebuje otroke.
+        /// </summary>
+        /// <param name="parameter">Parameter, ki ga želimo preveriti.</param>
+        /// <returns>
+        /// <c>true</c>, če parameter vsebuje otroke; <c>false</c>, če parameter nima otrok.
+        /// </returns>
+        /// <remarks>
+        /// Metoda preveri, ali dani parameter vsebuje vsaj enega otroka.
+        /// Če ima parameter vsaj enega otroka, vrne vrednost <c>true</c>, sicer vrne vrednost <c>false</c>.
+        /// </remarks>
         static bool HasChild(Parameter parameter)
         {
             if (parameter.Children.Count > 0)
@@ -46,6 +64,44 @@ namespace AHP_Method
             }
         }
 
+        /// <summary>
+        /// Ob koncu urejanja celice v podatkovni mreži parametrov, preveri in posodobi vrednosti celic.
+        /// </summary>
+        /// <param name="sender">Objekt, ki sproži dogodek.</param>
+        /// <param name="e">Podatki o urejanju celice v podatkovni mreži.</param>
+        /// <remarks>
+        /// Metoda preveri, ali urejena celica vsebuje pravilno vrednost. Če je urejena celica številčnega tipa,
+        /// zamenja vejico s piko kot decimalni separator. Nato preveri, ali je nova vrednost število med 0 in 9.
+        /// Če ni, prikaže opozorilo in prekine urejanje celice. V nasprotnem primeru zaokroži novo vrednost na dve decimalki
+        /// in posodobi vrednost v povezanem DataRowView objektu.
+        /// </remarks>
+
+        private void GridParameters_CellEditEnding(object sender, DataGridCellEditEndingEventArgs e)
+        {
+            if (e.Column is DataGridTextColumn textColumn && textColumn.Binding is Binding binding && binding.Path.Path == ".")
+            {
+                TextBox textBox = e.EditingElement as TextBox;
+                if (textBox != null)
+                {
+                    string newText = textBox.Text.Replace(',', '.');
+
+                    if (!double.TryParse(newText, NumberStyles.Float, CultureInfo.InvariantCulture, out double newValue) || newValue <= 0 || newValue > 9)
+                    {
+                        MessageBox.Show("Napačen vnos! Vnesite število večje od 0 in manjše ali enako 9.");
+                        e.Cancel = true;
+                        return;
+                    }
+
+                    newValue = Math.Round(newValue, 2);
+
+                    var rowView = e.Row.Item as DataRowView;
+                    if (rowView != null)
+                    {
+                        rowView[binding.Path.Path] = newValue;
+                    }
+                }
+            }
+        }
 
         public MainWindow()
         {
@@ -54,34 +110,64 @@ namespace AHP_Method
             DataContext = rootCollection;
         }
 
-
-        private void dodajParameter_Click(object sender, RoutedEventArgs e)
+        /// <summary>
+        /// Preveri, ali ime parametra že obstaja znotraj njega in njegovih otrok.
+        /// </summary>
+        /// <param name="parameterName">Ime parametra, ki ga želimo preveriti glede na podvajanje.</param>
+        /// <param name="parameter">Korenski objekt Parameter, od katerega želimo začeti iskanje.</param>
+        /// <returns>True, če je ime parametra podvojeno, sicer false.</returns>
+        private bool IsParameterNameDuplicate(string parameterName, Parameter parameter)
         {
+            if (parameter.Name.ToLower() == parameterName.ToLower())
+            {
+                return true;
+            }
+
+            foreach (Parameter child in parameter.Children)
+            {
+                if (IsParameterNameDuplicate(parameterName, child))
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// Dodaja parameter v hierarhijo.
+        /// </summary>
+        /// <param name="sender">Objekt, ki sproži dogodek.</param>
+        /// <param name="e">Podatki o dogodku.</param>
+        /// <remarks>
+        /// Metoda omogoča dodajanje novega parametra v hierarhijo.
+        /// Preveri, ali je vnešeno ime novega parametra prazno ali nično.
+        /// Če je ime veljavno, ustvari nov Parameter objekt z vnešenim imenom in ga doda kot otroka izbranemu parametru v drevesni strukturi (če je izbran parameter) ali kot otroka korenskega parametra (če ni izbran noben parameter).
+        /// V primeru, da parameter z enakim imenom že obstaja, se prikaže ustrezno sporočilo o napaki.
+        /// Po dodajanju se tekstovno polje za ime parametra izprazni.
+        /// </remarks>
+        private void dodajParameter_Click(object sender, RoutedEventArgs e)    //Dodajanje parametrov v hierarhijo
+        {       
             string newParameterName = newParameterTextBox.Text;
             if (!String.IsNullOrEmpty(newParameterName))
             {
+                if (IsParameterNameDuplicate(newParameterName, rootParameter))
+                {
+                    MessageBox.Show($"Parameter z imenom '{newParameterName}' že obstaja!");
+                    return;
+                }
+
                 Parameter newChild = new Parameter(newParameterName);
                 if (treeView.SelectedItem != null)
                 {
                     Parameter selectedParameter = treeView.SelectedItem as Parameter;
                     if (selectedParameter != null)
                     {
-                        if (selectedParameter.Children.Any(p => p.Name.ToLower() == newParameterName.ToLower()))
-                        {
-                            MessageBox.Show($"Parameter z imenom '{newParameterName}' že obstaja!");
-                            return;
-                        }
                         selectedParameter.Children.Add(newChild);
                         newChild.Parent = selectedParameter;
                     }
                 }
                 else
                 {
-                    if (rootParameter.Children.Any(p => p.Name.ToLower() == newParameterName.ToLower()))
-                    {
-                        MessageBox.Show($"Parameter z imenom '{newParameterName}' že obstaja!");
-                        return;
-                    }
                     rootParameter.Children.Add(newChild);
                     newChild.Parent = rootParameter;
                 }
@@ -93,7 +179,19 @@ namespace AHP_Method
             newParameterTextBox.Text = "";
         }
 
-        private void odstraniParameter_Click(object sender, RoutedEventArgs e)
+        /// <summary>
+        /// Odstrani parameter iz hierarhije.
+        /// </summary>
+        /// <param name="sender">Objekt, ki sproži dogodek.</param>
+        /// <param name="e">Podatki o dogodku.</param>
+        /// <remarks>
+        /// Metoda omogoča odstranjevanje izbranega parametra iz hierarhije.
+        /// Preveri, ali je izbran parameter veljaven (ni null) in ni korenski parameter.
+        /// Če je izbran parameter veljaven, ga odstrani iz seznama otrok njegovega starša ali iz seznama otrok korenskega parametra (če nima starša).
+        /// Prav tako posodobi starševstvo otrok odstranjenega parametra tako, da jih nastavi na null.
+        /// Poleg tega odstrani izbrani parameter iz konteksta podatkov.
+        /// </remarks>
+        private void odstraniParameter_Click(object sender, RoutedEventArgs e)   //Odstranjevanje parametra iz hierarhije
         {
             Parameter selectedParameter = treeView.SelectedItem as Parameter;
             if (selectedParameter != null && selectedParameter != rootParameter)
@@ -116,7 +214,17 @@ namespace AHP_Method
             }
         }
 
-        private List<Parameter> GetParameterList(ObservableCollection<Parameter> rootCollection)
+        /// <summary>
+        /// Pridobi seznam parametrov iz hierarhije.
+        /// </summary>
+        /// <param name="rootCollection">Korenja kolekcija parametrov.</param>
+        /// <returns>Seznam parametrov.</returns>
+        /// <remarks>
+        /// Metoda rekurzivno pregleda hierarhijo parametrov, začenši z dano korenjo kolekcije.
+        /// Vsak parameter v korenski kolekciji se doda na seznam parametrov, nato pa se rekurzivno preverijo in dodajo tudi vsi otroci parametrov.
+        /// Na koncu se vrne seznam vseh parametrov.
+        /// </remarks>
+        private List<Parameter> GetParameterList(ObservableCollection<Parameter> rootCollection)  //Shranjevanje parametrov v List
         {
             var parameterList = new List<Parameter>();
 
@@ -129,29 +237,53 @@ namespace AHP_Method
             return parameterList;
         }
 
+        /// <summary>
+        /// Pridobivanje otrok
+        /// </summary>
+        /// <param name="parameter"></param>
+        /// <returns> List otrok </returns>
+        /// <remarks>
+        /// Metoda rekurzivno preverja vse otroke podanega parametra in jih dodaja v seznam.
+        /// Za vsakega otroka izvede rekurzivni klic, da pridobi vse njegove otroke in jih doda v seznam.
+        /// Na koncu vrne seznam vseh otrok parametrov.
+        /// </remarks>
         private List<Parameter> GetChildParameters(Parameter parameter)
         {
-            var parameterList = new List<Parameter>();
+            var childList = new List<Parameter>();
 
             foreach (var child in parameter.Children)
             {
-                parameterList.Add(child);
-                parameterList.AddRange(GetChildParameters(child));
+                childList.Add(child);
+                childList.AddRange(GetChildParameters(child));
             }
 
-            return parameterList;
+            return childList;
         }
+
+        /// <summary>
+        /// Navigacija na naslednji tab
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        /// <remarks>
+        /// Metoda pridobi seznam parametrov iz DataContexta in ga shrani v list parametrov.
+        /// Nato uredi starše parametrov in naloži tabelo parametrov.
+        /// Na koncu spremeni indeks izbranega zavihka na 1, kar prikaže naslednji zaslon z parametri.
+        /// </remarks>
 
         private void naprejNaParametre_Click(object sender, RoutedEventArgs e)
         {
             var parameterList = GetParameterList((ObservableCollection<Parameter>)DataContext);
             parametri = parameterList;
             SortParents();
+            NaloziTabelo();
             myTabControl.SelectedIndex = 1;
         }
 
-
-        private void SortParents() //Iteracija skozi parametre kjer nato starše dodam v nov list
+        /// <summary>
+        /// Funkcija iterira skozi hierarhijo parametrov in iz nje poišče starše in jih vstavi v nov list
+        /// </summary>
+        private void SortParents()
         {
             parents = new List<Parameter>();
             foreach (Parameter p in parametri)
@@ -161,124 +293,264 @@ namespace AHP_Method
                     parents.Add(p);
                 }
             }
-
             parents.Reverse();
         }
-  
 
-        //private void pairwiseComparison2() //Funckija gre skozi vse starse in za vsakega pripravi primerjavo po parih njegovih otrok in ga doda v nov list premerjav
-        //                                   // z indexcount bi visal vsakega starsa da bi funckija trajala dokler ni enaka stevila starsev?? in potem uporabnik veca index?
-        //{
-        //    foreach (Parameter parent in parents)
-        //    {
-        //        indexCount++;
-        //        var parameterPairs = new List<ParameterPair>();
-        //        for (int i = 0; i < parent.Children.Count; i++)
-        //        {
-        //            for (int j = i + 1; j < parent.Children.Count; j++)
-        //            {
-        //                var pair = new ParameterPair(parent.Children[i], parent.Children[j]);
-        //                parameterPairs.Add(pair);
-        //            }
-        //        }
-        //    }
-        //}
 
-        //private void pairwiseComparison()
-        //{
-        //    var parameterPairs = new List<ParameterPair>();
-        //    for (int i = 0; i < parents.Count; i++)
-        //    {
-        //        for (int j = i + 1; j < parents.Count; j++)
-        //        {
-        //            var pair = new ParameterPair(parents[i], parents[j]);
-        //            parameterPairs.Add(pair);
-        //        }
-
-        //        var childrenPairs = new List<ParameterPair>();
-        //        foreach (var child in parents[i].Children)
-        //        {
-        //            for (int k = 0; k < parents.Count; k++)
-        //            {
-        //                if (parents[k] != parents[i] && parents[k].IsAncestor(child))
-        //                {
-        //                    var pair = new ParameterPair(child, parents[k]);
-        //                    childrenPairs.Add(pair);
-        //                }
-        //            }
-        //        }
-
-        //        parameterPairs.AddRange(childrenPairs);
-        //    }
-
-        //    DataContext = parameterPairs;
-        //    myTabControl.SelectedIndex = 2;
-        //}
-
-        private void Nalozi_Click(object sender, RoutedEventArgs e)
+        /// <summary>
+        /// Naloži tabelo parametrov.
+        /// </summary>
+        /// <remarks>
+        /// Metoda naloži tabelo parametrov v data grid.
+        /// Najprej preveri, ali so bili dodani starši parametrov.
+        /// Če ni dodanih staršev, se prikaže sporočilo in preklopi na prvi zavihek.
+        /// Nato se izbere trenutni staršni parameter in pridobi njegove otroke.
+        /// Ustvari se nova podatkovna tabela in dodajo se stolpci za staršnega parametra in otroke.
+        /// Vrstice tabele se napolnijo z vrednostmi, kjer so po diagonali vrednosti 1 ostale pa 0.
+        /// Končna tabela se poveže z vmesnikom podatkovne mreže in se prikaže v mreži.
+        /// </remarks>
+        private void NaloziTabelo()
         {
+            dataGridParameters.CellEditEnding += GridParameters_CellEditEnding;
+
             if (parents.Count == 0)
             {
                 MessageBox.Show("Najprej morate dodati parametre!");
                 myTabControl.SelectedIndex = 0;
             }
+
+            Parameter parent = parents[currentIndex];
+            ObservableCollection<Parameter> children = parent.Children;
+
+            tableParameters = new DataTable();
+
             if (currentIndex < parents.Count)
             {
-                Parameter parent = parents[currentIndex];
-                ObservableCollection<Parameter> children = parent.Children;
-                DataTable table = new DataTable();
-
                 dataGridParameters.Columns.Clear();
                 dataGridParameters.CanUserAddRows = false;
                 dataGridParameters.CanUserResizeColumns = false;
                 dataGridParameters.AutoGenerateColumns = true;
 
-                // Add the first column for the row headers
-                table.Columns.Add(parent.Name);
+                tableParameters.Columns.Add(parent.Name);
 
-                // Add columns for the child parameters
                 foreach (Parameter child in children)
                 {
-                    table.Columns.Add(child.Name, typeof(double));
+                    tableParameters.Columns.Add(child.Name, typeof(double));
                 }
 
-                // Add a row for each child parameter
                 for (int i = 0; i < children.Count; i++)
                 {
-                    DataRow row = table.NewRow();
-                    row[0] = children[i].Name; // Set the value of the row header column
+                    DataRow row = tableParameters.NewRow();
+                    row[0] = children[i].Name;
                     for (int j = 1; j <= children.Count; j++)
                     {
                         if (i == j - 1)
                         {
-                            row[j] = 1; // Set diagonal cell values to 1
+                            row[j] = 1;
                         }
                         else
                         {
-                            row[j] = 0; // Initialize the values of the other cells to 0
+                            row[j] = 0;
                         }
                     }
-                    table.Rows.Add(row);
+                    tableParameters.Rows.Add(row);
                 }
-
-                dataGridParameters.ItemsSource = table.DefaultView;
-                currentIndex++; 
+                dataGridParameters.ItemsSource = tableParameters.DefaultView;
+                currentIndex++;
             }
         }
 
+        /// <summary>
+        /// Shrani podatke iz tabele.
+        /// </summary>
+        /// <remarks>
+        /// Metoda shrani vse podatke iz tabele parametrov v seznam.
+        /// Vsaka vrstica tabele se pretvori v seznam števil, pri čemer se preskoči prvi stolpec kateri je namenjen kot row header.
+        /// Pretvorjene podatke se dodajo v seznam savedTable.
+        /// </remarks>
+        private void SaveTable()
+        {
+            savedTable = new List<List<double>>();
+            foreach (DataRow row in tableParameters.Rows)
+            {
+                List<double> rowData = new List<double>();
+
+                for (int i = 1; i < row.ItemArray.Length; i++)
+                {
+                    rowData.Add(Convert.ToDouble(row[i]));
+                }
+
+                savedTable.Add(rowData);
+            }
+        }
+
+        /// <summary>
+        /// Izračunaj normalizirano tabelo.
+        /// </summary>
+        /// <returns>Normalizirana tabela vrednosti.</returns>
+        /// <remarks>
+        /// Metoda izračuna normalizirano tabelo iz shranjene tabele vrednosti.
+        /// Najprej pridobi število vrstic in stolpcev v shranjeni tabeli.
+        /// Nato izračuna vsoto vrednosti za vsak stolpec.
+        /// Za vsako vrednost v tabeli izračuna normalizirano vrednost, ki je razmerje med vrednostjo in vsoto vrednosti stolpca.
+        /// Normalizirane vrednosti zaokroži na tri decimalna mesta.
+        /// Rezultat je seznam seznamov z normaliziranimi vrednostmi za vsak stolpec.
+        /// </remarks>
+        private List<List<double>> CalculateNormalizedTable()
+        {
+            int rowCount = savedTable.Count;
+            int columnCount = savedTable[0].Count;
+
+            List<List<double>> normalizedTable = new List<List<double>>();
+
+            for (int j = 0; j < columnCount; j++)
+            {
+                double sum = 0.0;
+                for (int i = 0; i < rowCount; i++)
+                {
+                    sum += savedTable[i][j];
+                }
+
+                List<double> normalizedColumn = new List<double>();
+                for (int i = 0; i < rowCount; i++)
+                {
+                    double normalizedValue = savedTable[i][j] / sum;
+                    normalizedValue = Math.Round(normalizedValue, 3);
+                    normalizedColumn.Add(normalizedValue);
+                }
+
+                normalizedTable.Add(normalizedColumn);
+            }
+            return normalizedTable;
+        }
+
+        /// <summary>
+        /// Prikaz teže v tabeli.
+        /// </summary>
+        /// <param name="tableRows">Seznam seznamov z normaliziranimi vrednostmi.</param>
+        /// <remarks>
+        /// Metoda prikaže težo parametrov v tabeli.
+        /// Najprej preveri, ali obstaja naslednji parameter za prikaz teže.
+        /// Nato pridobi starša in otroke za določen parameter.
+        /// Ustvari novo tabelo za teže.
+        /// Počisti stolpce v datagridu.
+        /// Nastavi možnost dodajanja vrstic in spreminjanja velikosti stolpcev na false.
+        /// Samodejno generira stolpce glede na število otrok.
+        /// Dodaja stolpce v tabelo tež.
+        /// Napolni vrstice tabele tež z vrednostmi iz seznama normaliziranih vrednosti.
+        /// Izračuna in doda stolpec za uteži.
+        /// Za vsako vrstico izračuna vsoto vrednosti za vse stolpce razen zadnjega.
+        /// Izračuna utež za vrstico kot razmerje med vsoto in številom stolpcev.
+        /// Zaokroži utež na tri decimalna mesta.
+        /// Posodobi težo otroka s pridobljeno utežjo.
+        /// Nastavi vir podatkov za datagrid na tabelo tež.
+        /// Poveča indeks za prikaz naslednjega parametra.
+        /// </remarks>
+        private void DisplayWeightTable(List<List<double>> tableRows)
+        {
+            if (currentWeightIndex < parents.Count)
+            {
+                Parameter parent = parents[currentWeightIndex];
+                ObservableCollection<Parameter> children = parent.Children;
+                tableWeights = new DataTable();
+
+                dataGridWeights.Columns.Clear();
+
+                dataGridWeights.CanUserAddRows = false;
+                dataGridWeights.CanUserResizeColumns = false;
+                dataGridWeights.AutoGenerateColumns = true;
+
+                tableWeights.Columns.Add(parent.Name);
+
+                foreach (Parameter child in children)
+                {
+                    tableWeights.Columns.Add(child.Name, typeof(double));
+                }
+
+                for (int i = 0; i < children.Count; i++)
+                {
+                    DataRow row = tableWeights.NewRow();
+                    row[0] = children[i].Name;
+
+                    for (int j = 0; j < children.Count; j++)
+                    {
+                        row[j + 1] = tableRows[j][i];
+                    }
+
+                    tableWeights.Rows.Add(row);
+                }
+
+                DataColumn uteziColumn = tableWeights.Columns.Add("Uteži", typeof(double));
+
+                for (int rowIndex = 0; rowIndex < tableWeights.Rows.Count; rowIndex++)
+                {
+                    DataRow row = tableWeights.Rows[rowIndex];
+                    double sum = 0.0;
+                    for (int columnIndex = 1; columnIndex < tableWeights.Columns.Count - 1; columnIndex++)
+                    {
+                        sum += Convert.ToDouble(row[columnIndex]);
+                    }
+                    double weight = sum / (tableWeights.Columns.Count - 2);
+
+                    row[uteziColumn] = Math.Round(weight, 3);
+                    Parameter child = children[rowIndex];
+                    child.Weight = weight;
+                }
+                dataGridWeights.ItemsSource = tableWeights.DefaultView;
+                currentWeightIndex++;
+            }
+        }
+
+        /// <summary>
+        /// Izračun teže parametrov.
+        /// </summary>
+        /// <param name="sender">Objekt, ki sproži dogodek.</param>
+        /// <param name="e">Argumenti dogodka.</param>
+        /// <remarks>
+        /// Metoda izračuna težo parametrov.
+        /// Najprej shrani trenutno tabelo.
+        /// Izračuna normalizirano tabelo.
+        /// Nato prikaže tabelo z utežmi parametrov.
+        /// </remarks>
         private void Izracunaj_Click(object sender, RoutedEventArgs e)
         {
-
+            SaveTable();
+            List<List<double>> tableRows = CalculateNormalizedTable();
+            DisplayWeightTable(tableRows);
         }
 
 
+        /// <summary>
+        /// Premik na naslednjo matriko parametrov.
+        /// </summary>
+        /// <param name="sender">Objekt, ki sproži dogodek.</param>
+        /// <param name="e">Argumenti dogodka.</param>
+        /// <remarks>
+        /// Metoda omogoča premik na naslednjo matriko parametrov.
+        /// Če še niso prikazane vse matrike parametrov, počisti trenutne matrike, tabelo parametrov in shranjeno tabelo ter naloži naslednjo matriko parametrov.
+        /// Če so prikazane že vse matrike parametrov, prikaže opozorilno sporočilo ob koncu primerjave parametrov po parih.
+        /// </remarks>
         private void nextGrid_Click(object sender, RoutedEventArgs e)
         {
-            if (currentIndex < parents.Count)
+            if (currentIndex < parents.Count && currentWeightIndex < parents.Count)
             {
                 dataGridParameters.Columns.Clear();
-                //currentIndex++;
-                Nalozi_Click(sender, e);
+                dataGridParameters.ItemsSource = null;
+                dataGridWeights.Columns.Clear();
+                dataGridWeights.ItemsSource = null;
+
+                tableParameters.Clear();
+                tableParameters.Columns.Clear();
+                tableParameters.Rows.Clear();
+                tableParameters.Reset();
+
+                savedTable.Clear();
+                tableWeights.Clear();
+                tableWeights.Reset();
+                tableWeights.Columns.Clear();
+                tableWeights.Rows.Clear();
+
+                NaloziTabelo();
             }
             else if (currentIndex == parents.Count)
             {
@@ -288,123 +560,6 @@ namespace AHP_Method
         }
 
 
-        //private void ShowParametersInGrid()
-        //{
-        //    // Get all parameters
-        //    var parameterList = GetParameterList((ObservableCollection<Parameter>)DataContext);
-
-        //    // Sort parents
-        //    SortParents();
-
-        //    // Loop through parents and create a new tab for each
-        //    for (int i = 0; i < parents.Count; i++)
-        //    {
-        //        var parent = parents[i];
-        //        var dataGrid = new DataGrid();
-
-        //        // Add columns to the data grid
-        //        dataGrid.Columns.Add(new DataGridTextColumn
-        //        {
-        //            Header = parent.Name,
-        //            Binding = new Binding($"PairwiseComparisonValues[{i},{i}]"),
-        //            IsReadOnly = true
-        //        });
-
-        //        foreach (var child in parent.Children)
-        //        {
-        //            dataGrid.Columns.Add(new DataGridTextColumn
-        //            {
-        //                Header = child.Name,
-        //                Binding = new Binding($"PairwiseComparisonValues[{parent.Index},{child.Index}]")
-        //            });
-        //        }
-
-        //        // Add rows to the data grid
-        //        for (int row = 0; row < parent.Children.Count; row++)
-        //        {
-        //            var child = parent.Children[row];
-        //            var rowData = new List<double>();
-        //            rowData.Add(1.0 / parameterList.Count); // Add the diagonal element
-        //            for (int col = 0; col < parent.Children.Count; col++)
-        //            {
-        //                rowData.Add(1.0);
-        //            }
-        //            dataGrid.Items.Add(rowData);
-        //        }
-
-        //        // Add the data grid to a new tab
-        //    }
-
-        //    // Select the first tab
-        //}
-
-
-
-
-
-        //private void primerjavaParametrovPoParih()
-        //{
-        //    var parameterList = GetParameterList((ObservableCollection<Parameter>)DataContext);
-        //    parametri = parameterList;
-        //    var parameterPairs = new List<ParameterPair>();
-        //    for (int i = 0; i < parameterList.Count; i++)
-        //    {
-        //        for (int j = i + 1; j < parameterList.Count; j++)
-        //        {
-        //            parameterPairs.Add(new ParameterPair(parameterList[i], parameterList[j]));
-        //        }
-        //    }
-        //    myTabControl.SelectedIndex = 2;
-        //    DataContext = parameterPairs;
-        //}
-
-        //neke za graf
-        //private void generateGraf_Click(object sender, RoutedEventArgs e)
-        //{
-        //    string dotSource = GenerateDotSource(); // Generate the DOT source code
-        //    byte[] graphImageBytes = GenerateGraphImage(dotSource); // Generate the graph image
-
-        //    // Display the graph image
-        //    BitmapImage bitmapImage = new BitmapImage();
-        //    bitmapImage.BeginInit();
-        //    bitmapImage.StreamSource = new MemoryStream(graphImageBytes);
-        //    bitmapImage.CacheOption = BitmapCacheOption.OnLoad;
-        //    bitmapImage.EndInit();
-        //    graphImage.Source = bitmapImage;
-        //}
-
-
-
-
-        //private double[,] GeneratePairwiseComparisonMatrix(Parameter nodeParameter)
-        //{
-        //    int size = nodeParameter.GetSubtreeSize();
-        //    double[,] matrix = new double[size, size];
-        //    List<Parameter> parameters = nodeParameter.GetSubtree();
-
-        //    for (int i = 0; i < size; i++)
-        //    {
-        //        matrix[i, i] = 1;
-        //        for (int j = i + 1; j < size; j++)
-        //        {
-        //            double comparison = 0;
-        //            if (parameters[i] == nodeParameter || parameters[j] == nodeParameter) // Compare the node parameter with its immediate children
-        //            {
-        //                comparison = GetComparisonFromUser(parameters[i], parameters[j]);
-        //            }
-        //            else // Recursively compare the subtree of each child
-        //            {
-        //                double[,] childMatrix = GeneratePairwiseComparisonMatrix(parameters[i]);
-        //                double[,] subchildMatrix = GeneratePairwiseComparisonMatrix(parameters[j]);
-        //                comparison = CalculateComparisonFromMatrices(childMatrix, subchildMatrix);
-        //            }
-        //            matrix[i, j] = comparison;
-        //            matrix[j, i] = 1.0 / comparison;
-        //        }
-        //    }
-
-        //    return matrix;
-        //}
 
     }
 }
