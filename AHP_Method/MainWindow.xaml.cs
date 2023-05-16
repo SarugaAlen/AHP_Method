@@ -31,8 +31,7 @@ namespace AHP_Method
         List<Parameter> parametri;
         List<Parameter> parents;
 
-        public int indexCount = 0;
-        private int currentParentIndex = 0;
+        private int currentIndex = 0;
 
 
         static bool HasChild(Parameter parameter)
@@ -165,24 +164,25 @@ namespace AHP_Method
 
             parents.Reverse();
         }
+  
 
-        private void pairwiseComparison2() //Funckija gre skozi vse starse in za vsakega pripravi primerjavo po parih njegovih otrok in ga doda v nov list premerjav
-                                           // z indexcount bi visal vsakega starsa da bi funckija trajala dokler ni enaka stevila starsev?? in potem uporabnik veca index?
-        {
-            foreach (Parameter parent in parents)
-            {
-                indexCount++;
-                var parameterPairs = new List<ParameterPair>();
-                for (int i = 0; i < parent.Children.Count; i++)
-                {
-                    for (int j = i + 1; j < parent.Children.Count; j++)
-                    {
-                        var pair = new ParameterPair(parent.Children[i], parent.Children[j]);
-                        parameterPairs.Add(pair);
-                    }
-                }
-            }
-        }
+        //private void pairwiseComparison2() //Funckija gre skozi vse starse in za vsakega pripravi primerjavo po parih njegovih otrok in ga doda v nov list premerjav
+        //                                   // z indexcount bi visal vsakega starsa da bi funckija trajala dokler ni enaka stevila starsev?? in potem uporabnik veca index?
+        //{
+        //    foreach (Parameter parent in parents)
+        //    {
+        //        indexCount++;
+        //        var parameterPairs = new List<ParameterPair>();
+        //        for (int i = 0; i < parent.Children.Count; i++)
+        //        {
+        //            for (int j = i + 1; j < parent.Children.Count; j++)
+        //            {
+        //                var pair = new ParameterPair(parent.Children[i], parent.Children[j]);
+        //                parameterPairs.Add(pair);
+        //            }
+        //        }
+        //    }
+        //}
 
         //private void pairwiseComparison()
         //{
@@ -217,9 +217,14 @@ namespace AHP_Method
 
         private void Nalozi_Click(object sender, RoutedEventArgs e)
         {
-            if (parents.Count > 0)
+            if (parents.Count == 0)
             {
-                Parameter parent = parents.First();
+                MessageBox.Show("Najprej morate dodati parametre!");
+                myTabControl.SelectedIndex = 0;
+            }
+            if (currentIndex < parents.Count)
+            {
+                Parameter parent = parents[currentIndex];
                 ObservableCollection<Parameter> children = parent.Children;
                 DataTable table = new DataTable();
 
@@ -234,13 +239,6 @@ namespace AHP_Method
                 // Add columns for the child parameters
                 foreach (Parameter child in children)
                 {
-                    //dataGridParameters.Columns.Add(new DataGridTextColumn()
-                    //{
-                    //    Header = child.Name,
-                    //    Binding = new Binding($"[{child.Name}]")
-                    //});
-
-                    // Add a column for each child parameter
                     table.Columns.Add(child.Name, typeof(double));
                 }
 
@@ -264,6 +262,7 @@ namespace AHP_Method
                 }
 
                 dataGridParameters.ItemsSource = table.DefaultView;
+                currentIndex++; 
             }
         }
 
@@ -275,7 +274,17 @@ namespace AHP_Method
 
         private void nextGrid_Click(object sender, RoutedEventArgs e)
         {
-            
+            if (currentIndex < parents.Count)
+            {
+                dataGridParameters.Columns.Clear();
+                //currentIndex++;
+                Nalozi_Click(sender, e);
+            }
+            else if (currentIndex == parents.Count)
+            {
+                MessageBox.Show("Konec primerjave parametrov po parih.");
+                return;
+            }
         }
 
 

@@ -65,21 +65,36 @@
                         <StackPanel Grid.Row="0" Grid.ColumnSpan="2" Orientation="Horizontal" HorizontalAlignment="Center">
                             <Button x:Name="Nalozi" Content="Nalozi" Width="200" Height="50" Click="Nalozi_Click"></Button>
                             <Button x:Name="Izracunaj" Content="Izracunaj" Width="200" Height="50" Margin="50 0 0 0" Click="Izracunaj_Click"></Button>
-                            <Button x:Name="nextGrid" Content="->" Width="100" Height="50" Margin="50 0 0 0" Click="nextGrid_Click"></Button>
+                            <Button x:Name="nextGrid" Content="Naslednji parameter" Width="250" Height="50" Margin="50 0 0 0" Click="nextGrid_Click"></Button>
                         </StackPanel>
                         <StackPanel Grid.Row="1" Grid.ColumnSpan="2" Orientation="Horizontal">
-                            <StackPanel Grid.Row="1" Grid.Column="0">
-                                <Border BorderBrush="Black" BorderThickness="2">
-                                    <DataGrid x:Name="dataGridParameters" Width="500" Height="500" Margin="5">
+                            <Border BorderBrush="Black" BorderThickness="2" Width="600" Height="500" Margin="30 0 0 0">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
 
-                                    </DataGrid>
-                                </Border>
-                            </StackPanel>
-                            <StackPanel Grid.Row="1" Grid.Column="1">
-                                <Border BorderBrush="Black" BorderThickness="2">
-                                    <DataGrid>
+                                    <StackPanel Grid.Row="1" Grid.Column="0" >
+                                        <DataGrid x:Name="dataGridParameters"  Margin="5" FontSize="25">
 
-                                    </DataGrid>
+                                        </DataGrid>
+                                    </StackPanel>
+                                </Grid>
+                            </Border>
+                            <StackPanel Grid.Row="1" Grid.Column="1" Width="600" Height="500" Margin="200 0 0 0">
+                                <Border BorderBrush="Black" BorderThickness="2" Width="600" Height="500">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+                                        <StackPanel Grid.Column="0">
+                                            <DataGrid Margin="5" FontSize="25">
+
+                                            </DataGrid>
+                                        </StackPanel>
+                                    </Grid>
                                 </Border>
                             </StackPanel>
                         </StackPanel>
