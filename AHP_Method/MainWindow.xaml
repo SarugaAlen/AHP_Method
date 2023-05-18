@@ -63,7 +63,7 @@
                         </Grid.ColumnDefinitions>
                         <Label Grid.Row="0" Grid.ColumnSpan="2" Content="Primerjava po parih" FontWeight="Bold" FontSize="25" HorizontalAlignment="Center" ></Label>
                         <StackPanel Grid.Row="0" Grid.ColumnSpan="2" Orientation="Horizontal" HorizontalAlignment="Center">
-                            <Button x:Name="Izracunaj" Content="Izracunaj" Width="200" Height="50" Margin="50 0 0 0" Click="Izracunaj_Click"></Button>
+                            <Button x:Name="Izracunaj" Content="Izračunaj" Width="200" Height="50" Margin="50 0 0 0" Click="Izracunaj_Click"></Button>
                             <Button x:Name="nextGrid" Content="Naslednji parameter" Width="250" Height="50" Margin="50 0 0 0" Click="nextGrid_Click"></Button>
                         </StackPanel>
                         <StackPanel Grid.Row="1" Grid.ColumnSpan="2" Orientation="Horizontal">
