@@ -3,6 +3,7 @@ using LiveCharts.Wpf.Charts.Base;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Collections.Specialized;
 using System.Data;
 using System.Globalization;
 using System.IO;
@@ -32,6 +33,8 @@ namespace AHP_Method
         Parameter rootParameter = new Parameter("Problem odločanja");
         List<Parameter> parametri;
         List<Parameter> parents;
+        List<Parameter> parametriBrezRoot;
+
 
         private int currentIndex = 0;
         private int currentWeightIndex = 0;
@@ -39,6 +42,11 @@ namespace AHP_Method
         private DataTable tableParameters;
         private DataTable tableWeights;
         private List<List<double>> savedTable;
+        
+        ObservableCollection<Alternativa> alternative { get; set; }
+
+        private int currentIndexAlternative = 0;
+        private DataTable tableAlternative;
 
 
         /// <summary>
@@ -63,6 +71,8 @@ namespace AHP_Method
                 return false;
             }
         }
+
+
 
         /// <summary>
         /// Ob koncu urejanja celice v podatkovni mreži parametrov, preveri in posodobi vrednosti celic.
@@ -107,7 +117,10 @@ namespace AHP_Method
         {
             InitializeComponent();
             var rootCollection = new ObservableCollection<Parameter> { rootParameter };
+            alternative = new ObservableCollection<Alternativa>();
+
             DataContext = rootCollection;
+            alternativeListBox.ItemsSource = alternative;
         }
 
         /// <summary>
@@ -191,7 +204,7 @@ namespace AHP_Method
         /// Prav tako posodobi starševstvo otrok odstranjenega parametra tako, da jih nastavi na null.
         /// Poleg tega odstrani izbrani parameter iz konteksta podatkov.
         /// </remarks>
-        private void odstraniParameter_Click(object sender, RoutedEventArgs e)   //Odstranjevanje parametra iz hierarhije
+        private void odstraniParameter_Click(object sender, RoutedEventArgs e)  
         {
             Parameter selectedParameter = treeView.SelectedItem as Parameter;
             if (selectedParameter != null && selectedParameter != rootParameter)
@@ -211,6 +224,45 @@ namespace AHP_Method
                 }
 
                 ((ObservableCollection<Parameter>)DataContext).Remove(selectedParameter);
+            }
+        }
+
+
+        /// <summary>
+        /// Obdela dogodek  za gumb "DodajAlternativo". Dodaja novo Alternativo v alternativeCollection.
+        /// </summary>
+        /// <param name="sender">Objekt, ki je sprožil dogodek.</param>
+        /// <param name="e">Podatki o dogodku.</param>
+        private void DodajAlternativo_Click(object sender, RoutedEventArgs e)
+        {
+            string newAlternativaName = newAlternativaBox.Text;
+            if (!String.IsNullOrEmpty(newAlternativaName))
+            {
+                if (alternative.Any(alternativa => alternativa.Name == newAlternativaName))
+                {
+                    MessageBox.Show("Alternativa z tem imenom že obstaja!");
+                    return;
+                }
+
+                Alternativa alternativa = new Alternativa(newAlternativaName);
+                alternative.Add(alternativa);
+                newAlternativaBox.Text = "";
+            }
+        }
+
+        /// <summary>
+        /// Obdela dogodek  za gumb "OdstraniAlternativo". Odstrani izbrano Alternativo iz ListBox-a.
+        /// </summary>
+        /// <param name="sender">Objekt, ki je sprožil dogodek.</param>
+        /// <param name="e">Podatki o dogodku.</param>
+
+        private void OdstraniAlternativo_Click(object sender, RoutedEventArgs e)
+        {
+            if (alternativeListBox.SelectedItem != null)
+            {
+                Alternativa selectedAlternativa = alternativeListBox.SelectedItem as Alternativa;
+
+                alternative.Remove(selectedAlternativa);
             }
         }
 
@@ -554,12 +606,77 @@ namespace AHP_Method
             }
             else if (currentIndex == parents.Count)
             {
+                naprejAlternative.Visibility = Visibility.Visible;
                 MessageBox.Show("Konec primerjave parametrov po parih.");
                 return;
             }
         }
 
+        private void naprejAlternative_Click(object sender, RoutedEventArgs e)
+        {
+            parametriBrezRoot = parametri.GetRange(1, parametri.Count - 1);
+            NaloziTabeloAlternativ();
+            myTabControl.SelectedIndex = 2;     
+        }
 
+        private void NaloziTabeloAlternativ()
+        {
+            if(alternative.Count == 0)
+            {
+                MessageBox.Show("Najprej morate vnesti alternative!");
+                myTabControl.SelectedIndex = 0;
+            }
 
+            Parameter parameter = parametriBrezRoot[currentIndexAlternative];   //tu mors samo vse liste dat??? preveri
+
+            
+            tableAlternative = new DataTable();
+
+            if(currentIndexAlternative < parametriBrezRoot.Count)
+            {
+                dataGridAlternative.Columns.Clear();
+                dataGridAlternative.CanUserAddRows = false;
+                dataGridAlternative.CanUserResizeColumns = false;
+                dataGridAlternative.AutoGenerateColumns = true;
+
+                tableAlternative.Columns.Add(parameter.Name);
+
+                foreach (Alternativa alternative in alternative)
+                {
+                    tableAlternative.Columns.Add(alternative.Name, typeof(double));
+                }
+
+                for (int i = 0; i < alternative.Count; i++)
+                {
+                    DataRow row = tableAlternative.NewRow();
+                    row[0] = alternative[i].Name;
+
+                    for (int j = 0; j < alternative.Count; j++)
+                    {
+                        if (i == j)
+                        {
+                            row[j + 1] = 1; 
+                        }
+                        else
+                        {
+                            row[j + 1] = 0;
+                        }
+                    }
+
+                    tableAlternative.Rows.Add(row);
+                }
+                dataGridAlternative.ItemsSource = tableAlternative.DefaultView;
+                currentIndexAlternative++;
+            } 
+        }
+        private void izracunajAlternative_Click(object sender, RoutedEventArgs e)
+        {
+
+        }
+
+        private void naprejIzracun_Click(object sender, RoutedEventArgs e)
+        {
+
+        }
     }
 }

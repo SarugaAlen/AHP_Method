@@ -13,6 +13,8 @@ namespace AHP_Method.Model
         public string Name { get; set; }
         public Parameter Parent { get; set; }
 
+        public List<Alternativa> Alternative { get; set; }
+
         public double Weight { get; set; }
         private ObservableCollection<Parameter> _children;
         public ObservableCollection<Parameter> Children
