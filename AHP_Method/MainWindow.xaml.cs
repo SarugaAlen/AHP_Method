@@ -33,7 +33,7 @@ namespace AHP_Method
         Parameter rootParameter = new Parameter("Problem odločanja");
         List<Parameter> parametri;
         List<Parameter> parents;
-        List<Parameter> parametriBrezRoot;
+        List<Parameter> parametriLeafNodes;
 
 
         private int currentIndex = 0;
@@ -42,11 +42,14 @@ namespace AHP_Method
         private DataTable tableParameters;
         private DataTable tableWeights;
         private List<List<double>> savedTable;
-        
+
         ObservableCollection<Alternativa> alternative { get; set; }
 
         private int currentIndexAlternative = 0;
+        private int currentKoristnostIndex = 0;
         private DataTable tableAlternative;
+        private DataTable tableKoristnosti;
+        private List<List<double>> savedTableAlternative;
 
 
         /// <summary>
@@ -113,6 +116,40 @@ namespace AHP_Method
             }
         }
 
+        /// <summary>
+        /// Vrne seznam listev podanega seznama parametrov.
+        /// </summary>
+        /// <param name="parameters">Seznam parametrov</param>
+        /// <returns>Seznam listov vozlišč</returns>
+        private List<Parameter> GetLeafNodes(List<Parameter> parameters)
+        {
+            List<Parameter> leafNodes = new List<Parameter>();
+
+            for (int i = 1; i < parameters.Count; i++)
+            {
+                Parameter parameter = parameters[i];
+
+                if (parameter.Children.Count == 0 && !leafNodes.Contains(parameter))
+                {
+                    leafNodes.Add(parameter);
+                }
+                else
+                {
+                    List<Parameter> childLeafNodes = GetLeafNodes(parameter.Children.ToList());
+
+                    foreach (Parameter childLeafNode in childLeafNodes)
+                    {
+                        if (!leafNodes.Contains(childLeafNode))
+                        {
+                            leafNodes.Add(childLeafNode);
+                        }
+                    }
+                }
+            }
+
+            return leafNodes;
+        }
+
         public MainWindow()
         {
             InitializeComponent();
@@ -159,7 +196,7 @@ namespace AHP_Method
         /// Po dodajanju se tekstovno polje za ime parametra izprazni.
         /// </remarks>
         private void dodajParameter_Click(object sender, RoutedEventArgs e)    //Dodajanje parametrov v hierarhijo
-        {       
+        {
             string newParameterName = newParameterTextBox.Text;
             if (!String.IsNullOrEmpty(newParameterName))
             {
@@ -204,7 +241,7 @@ namespace AHP_Method
         /// Prav tako posodobi starševstvo otrok odstranjenega parametra tako, da jih nastavi na null.
         /// Poleg tega odstrani izbrani parameter iz konteksta podatkov.
         /// </remarks>
-        private void odstraniParameter_Click(object sender, RoutedEventArgs e)  
+        private void odstraniParameter_Click(object sender, RoutedEventArgs e)
         {
             Parameter selectedParameter = treeView.SelectedItem as Parameter;
             if (selectedParameter != null && selectedParameter != rootParameter)
@@ -276,7 +313,7 @@ namespace AHP_Method
         /// Vsak parameter v korenski kolekciji se doda na seznam parametrov, nato pa se rekurzivno preverijo in dodajo tudi vsi otroci parametrov.
         /// Na koncu se vrne seznam vseh parametrov.
         /// </remarks>
-        private List<Parameter> GetParameterList(ObservableCollection<Parameter> rootCollection)  //Shranjevanje parametrov v List
+        private List<Parameter> GetParameterList(ObservableCollection<Parameter> rootCollection)
         {
             var parameterList = new List<Parameter>();
 
@@ -420,20 +457,19 @@ namespace AHP_Method
         /// Vsaka vrstica tabele se pretvori v seznam števil, pri čemer se preskoči prvi stolpec kateri je namenjen kot row header.
         /// Pretvorjene podatke se dodajo v seznam savedTable.
         /// </remarks>
-        private void SaveTable()
+        private List<List<double>> SaveTable()
         {
             savedTable = new List<List<double>>();
             foreach (DataRow row in tableParameters.Rows)
             {
-                List<double> rowData = new List<double>();
-
+                List<double> rowList = new List<double>();
                 for (int i = 1; i < row.ItemArray.Length; i++)
                 {
-                    rowData.Add(Convert.ToDouble(row[i]));
+                    rowList.Add(Convert.ToDouble(row.ItemArray[i]));
                 }
-
-                savedTable.Add(rowData);
+                savedTable.Add(rowList);
             }
+            return savedTable;
         }
 
         /// <summary>
@@ -448,10 +484,10 @@ namespace AHP_Method
         /// Normalizirane vrednosti zaokroži na tri decimalna mesta.
         /// Rezultat je seznam seznamov z normaliziranimi vrednostmi za vsak stolpec.
         /// </remarks>
-        private List<List<double>> CalculateNormalizedTable()
+        private List<List<double>> CalculateNormalizedTable(List<List<double>> save)
         {
-            int rowCount = savedTable.Count;
-            int columnCount = savedTable[0].Count;
+            int rowCount = save.Count;
+            int columnCount = save[0].Count;
 
             List<List<double>> normalizedTable = new List<List<double>>();
 
@@ -460,13 +496,13 @@ namespace AHP_Method
                 double sum = 0.0;
                 for (int i = 0; i < rowCount; i++)
                 {
-                    sum += savedTable[i][j];
+                    sum += save[i][j];
                 }
 
                 List<double> normalizedColumn = new List<double>();
                 for (int i = 0; i < rowCount; i++)
                 {
-                    double normalizedValue = savedTable[i][j] / sum;
+                    double normalizedValue = save[i][j] / sum;
                     normalizedValue = Math.Round(normalizedValue, 3);
                     normalizedColumn.Add(normalizedValue);
                 }
@@ -566,8 +602,8 @@ namespace AHP_Method
         /// </remarks>
         private void Izracunaj_Click(object sender, RoutedEventArgs e)
         {
-            SaveTable();
-            List<List<double>> tableRows = CalculateNormalizedTable();
+            savedTable = SaveTable();
+            List<List<double>> tableRows = CalculateNormalizedTable(savedTable);
             DisplayWeightTable(tableRows);
         }
 
@@ -612,27 +648,47 @@ namespace AHP_Method
             }
         }
 
+        /// <summary>
+        /// Metoda se sproži ob kliku na gumb "naprejAlternative" in izvede naslednje korake:
+        /// 1. Pridobi listna vozlišča parametrov in jih shrani v spremenljivko "parametriLeafNodes".
+        /// 2. Naloži tabelo alternativ.
+        /// 3. Nastavi indeks zavihka v "myTabControl" na 2.
+        /// </summary>
         private void naprejAlternative_Click(object sender, RoutedEventArgs e)
         {
-            parametriBrezRoot = parametri.GetRange(1, parametri.Count - 1);
+            parametriLeafNodes = GetLeafNodes(parametri);
             NaloziTabeloAlternativ();
-            myTabControl.SelectedIndex = 2;     
+            myTabControl.SelectedIndex = 2;
         }
 
+        /// <summary>
+        /// Metoda naloži tabelo alternativ in izvede naslednje korake:
+        /// 1. Preveri, ali obstajajo alternative v seznamu "alternative". Če ne, prikaže sporočilo in nastavi indeks izbranega zavihka v "myTabControl" na 0.
+        /// 2. Pridobi trenutni parameter iz seznama listnih vozlišč "parametriLeafNodes".
+        /// 3. Ustvari novo tabelo "tableAlternative".
+        /// 4. Če je trenutni indeks alternative manjši od števila listnih vozlišč, nadaljuje s preostalimi koraki.
+        /// 5. Počisti stolpce v "dataGridAlternative" in nastavi lastnosti (CanUserAddRows, CanUserResizeColumns, AutoGenerateColumns).
+        /// 6. Doda prvi stolpec v "tableAlternative" s imenom trenutnega parametra.
+        /// 7. Za vsako alternativo doda stolpec v "tableAlternative" z imenom alternative in tipom podatka "double".
+        /// 8. Zanka preide skozi vse alternative in nastavi vrednosti v vrstici na 1, če je indeks alternativ enak indeksu vrstice, sicer nastavi vrednost na 0.
+        /// 9. Doda vrstico v "tableAlternative" in nastavi vrednosti v stolpcih glede na prejšnji korak.
+        /// 10. Nastavi vir podatkov "dataGridAlternative" na pogled "DefaultView" tabele "tableAlternative".
+        /// 11. Poveča trenutni indeks alternative za 1.
+        /// </summary>
         private void NaloziTabeloAlternativ()
         {
-            if(alternative.Count == 0)
+            if (alternative.Count == 0)
             {
                 MessageBox.Show("Najprej morate vnesti alternative!");
                 myTabControl.SelectedIndex = 0;
             }
 
-            Parameter parameter = parametriBrezRoot[currentIndexAlternative];   //tu mors samo vse liste dat??? preveri
+            Parameter parameter = parametriLeafNodes[currentIndexAlternative];
 
-            
+
             tableAlternative = new DataTable();
 
-            if(currentIndexAlternative < parametriBrezRoot.Count)
+            if (currentIndexAlternative < parametriLeafNodes.Count)
             {
                 dataGridAlternative.Columns.Clear();
                 dataGridAlternative.CanUserAddRows = false;
@@ -641,9 +697,9 @@ namespace AHP_Method
 
                 tableAlternative.Columns.Add(parameter.Name);
 
-                foreach (Alternativa alternative in alternative)
+                foreach (Alternativa alternativa in alternative)
                 {
-                    tableAlternative.Columns.Add(alternative.Name, typeof(double));
+                    tableAlternative.Columns.Add(alternativa.Name, typeof(double));
                 }
 
                 for (int i = 0; i < alternative.Count; i++)
@@ -655,7 +711,7 @@ namespace AHP_Method
                     {
                         if (i == j)
                         {
-                            row[j + 1] = 1; 
+                            row[j + 1] = 1;
                         }
                         else
                         {
@@ -667,16 +723,111 @@ namespace AHP_Method
                 }
                 dataGridAlternative.ItemsSource = tableAlternative.DefaultView;
                 currentIndexAlternative++;
-            } 
+            }
         }
+
+        private void DisplayKoristnostTable(List<List<double>> tableRows)
+        {
+            if (currentKoristnostIndex < parametriLeafNodes.Count)
+            {
+                Parameter leaf = parametriLeafNodes[currentKoristnostIndex];
+                leaf.Alternative = new List<Alternativa>();
+                tableKoristnosti = new DataTable();
+
+                dataGridAlternativeKoristnost.Columns.Clear();
+                dataGridAlternativeKoristnost.CanUserAddRows = false;
+                dataGridAlternativeKoristnost.CanUserResizeColumns = false;
+                dataGridAlternativeKoristnost.AutoGenerateColumns = true;
+
+
+                tableKoristnosti.Columns.Add(leaf.Name);
+
+                foreach (Alternativa alternativa in alternative)
+                {
+                    tableKoristnosti.Columns.Add(alternativa.Name, typeof(double));
+                }
+
+                for (int i = 0; i < tableRows.Count; i++)
+                {
+                    DataRow row = tableKoristnosti.NewRow();
+                    row[0] = alternative[i].Name;
+
+                    for (int j = 0; j < alternative.Count; j++)
+                    {
+                        row[j + 1] = tableRows[j][i];
+                    }
+
+                    tableKoristnosti.Rows.Add(row);
+                }
+
+                DataColumn koristnostColumn = tableKoristnosti.Columns.Add("Koristnost", typeof(double));
+
+                for (int rowIndex = 0; rowIndex < tableKoristnosti.Rows.Count; rowIndex++)
+                {
+                    DataRow row = tableKoristnosti.Rows[rowIndex];
+                    double sum = 0.0;
+                    for (int columnIndex = 1; columnIndex < tableKoristnosti.Columns.Count - 1; columnIndex++)
+                    {
+                        sum += Convert.ToDouble(row[columnIndex]);
+                    }
+                    double koristnost = sum / (tableKoristnosti.Columns.Count - 2);
+
+                    row[koristnostColumn] = Math.Round(koristnost, 3);
+                    Alternativa currentAlternative = alternative[rowIndex];
+                    currentAlternative.Koristnost = koristnost;
+                    leaf.Alternative.Add(currentAlternative);
+                }
+                dataGridAlternativeKoristnost.ItemsSource = tableKoristnosti.DefaultView;
+                currentKoristnostIndex++;
+            }
+        }
+        /// <summary>
+        /// Izračuna alternative in prikaže tabelo koristnosti.
+        /// </summary>
+        /// <param name="sender">Objekt, ki sproži dogodek.</param>
+        /// <param name="e">Podatki o dogodku.</param>
         private void izracunajAlternative_Click(object sender, RoutedEventArgs e)
         {
+            savedTableAlternative = SaveTable();
+            List<List<double>> tableRows = CalculateNormalizedTable(savedTableAlternative);
+            DisplayKoristnostTable(tableRows);
+        }
 
+        private void nextGridAlternative_Click(object sender, RoutedEventArgs e)
+        {
+            if (currentIndexAlternative < parametriLeafNodes.Count && currentKoristnostIndex < parametriLeafNodes.Count)
+            {
+                dataGridAlternative.Columns.Clear();
+                dataGridAlternative.ItemsSource = null;
+                dataGridAlternativeKoristnost.Columns.Clear();
+                dataGridAlternativeKoristnost.ItemsSource = null;
+
+                tableAlternative.Clear();
+                tableAlternative.Columns.Clear();
+                tableAlternative.Rows.Clear();
+                tableAlternative.Reset();
+
+                savedTableAlternative.Clear();
+                tableKoristnosti.Clear();
+                tableKoristnosti.Reset();
+                tableKoristnosti.Columns.Clear();
+                tableKoristnosti.Rows.Clear();
+
+                NaloziTabeloAlternativ();
+            }
+            else if (currentIndexAlternative == parametriLeafNodes.Count)
+            {
+                naprejIzracun.Visibility = Visibility.Visible;
+                MessageBox.Show("Konec primerjave alternativ po parih.");
+                return;
+            }
         }
 
         private void naprejIzracun_Click(object sender, RoutedEventArgs e)
         {
+            myTabControl.SelectedIndex = 3;
 
         }
+
     }
 }
