@@ -860,13 +860,13 @@ namespace AHP_Method
                 tableIzracun.Columns.Add(alternativa.Name, typeof(double));
             }
 
-            for (int i = 0; i < parametriWithoutRoot.Count; i++)  //torej tu najprej vsem ko so listi nastavis? pol pa se ostalim parentom?
+            for (int i = 0; i < parametriWithoutRoot.Count; i++) 
             {
                 DataRow row = tableIzracun.NewRow();
                 row[0] = parametriWithoutRoot[i].Name;
                 
                 Parameter current = parametriWithoutRoot[i];
-                if (current.Children.Count != 0)  //tu jebe
+                if (current.Children.Count != 0) 
                 {
                     for (int j = 0; j < alternative.Count; j++)
                     {
@@ -900,9 +900,34 @@ namespace AHP_Method
                 tableIzracun.Rows[i]["Uteži"] = Math.Round(parametriWithoutRoot[i].Weight, 3);
             }
 
+
+            // to se popravi
             DataRow izracunRow = tableIzracun.NewRow();
             izracunRow[0] = "Izračun";
+
+            double finalKoristnost = 0.0;
+
+            for (int j = 0; j < alternative.Count; j++)
+            {
+                double koristnostSum = 0.0;
+                foreach (Parameter child in parametri[0].Children)
+                {
+                    foreach (Parameter grandChild in child.Children)
+                    {
+                        double childKoristnost = grandChild.Alternative[j].Koristnost;
+                        double childWeight = grandChild.Weight;
+                        koristnostSum += childKoristnost * childWeight;
+                    }
+                }
+                finalKoristnost += koristnostSum;
+                izracunRow[j + 1] = Math.Round(koristnostSum, 3);
+            }
+
             tableIzracun.Rows.Add(izracunRow);
+
+            tableIzracun.Rows[parametriWithoutRoot.Count]["Uteži"] = Math.Round(finalKoristnost, 3);
+
+
 
             dataGridKoncniIzracun.ItemsSource = tableIzracun.DefaultView;
         }
