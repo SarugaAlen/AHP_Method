@@ -870,14 +870,16 @@ namespace AHP_Method
                 {
                     for (int j = 0; j < alternative.Count; j++)
                     {
-                        double koristnost = 1;
+                        double koristnost = 0.0;
+                        double sum = 0.0;
                         foreach (Parameter child in current.Children)
                         {
                             double childKoristnost = child.Alternative[j].Koristnost;
                             double childWeight = child.Weight;
-                            koristnost *= childKoristnost * childWeight;
+                            koristnost = childKoristnost * childWeight;
+                            sum += koristnost;
                         }
-                        row[j + 1] = Math.Round(koristnost, 3);
+                        row[j + 1] = Math.Round(sum, 3);
                     }                                    
                 }
                 else
