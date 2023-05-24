@@ -6,13 +6,14 @@ using System.Threading.Tasks;
 
 namespace AHP_Method.Model
 {
-    internal class Alternativa
+    internal class Alternativa : ICloneable
     {
         public string Name { get; set; }
         public double Koristnost { get; set; }
 
         public Alternativa()
         {
+            
         }
 
         public Alternativa(string name)
@@ -25,5 +26,15 @@ namespace AHP_Method.Model
             Name = name;
             Koristnost = koristnost;
         }
+
+        public object Clone()
+        {
+            return new Alternativa
+            {
+                Name = this.Name,
+                Koristnost = this.Koristnost
+            };
+        }
+
     }
 }

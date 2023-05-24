@@ -35,6 +35,7 @@ namespace AHP_Method.Model
         public Parameter()
         {
             Children = new ObservableCollection<Parameter>();
+            Alternative = new List<Alternativa>();
 
         }
         
@@ -42,6 +43,7 @@ namespace AHP_Method.Model
         {
             Name = name;
             Children = new ObservableCollection<Parameter>();
+            Alternative = new List<Alternativa>();
         }
 
         public bool IsAncestor(Parameter potentialDescendant)

@@ -95,9 +95,9 @@
                                         <ColumnDefinition Width="Auto"/>
                                         <ColumnDefinition Width="*"/>
                                     </Grid.ColumnDefinitions>
-                                    <StackPanel Grid.Row="1" Grid.Column="0">
+                                    <StackPanel Grid.Row="1" Grid.Column="0" Width="600" Height="500">
                                         <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto">
-                                            <DataGrid x:Name="dataGridParameters" Grid.Column="1" Margin="10" AutoGenerateColumns="False" CanUserAddRows="False" CanUserResizeColumns="False" ItemsSource="{Binding}">
+                                            <DataGrid x:Name="dataGridParameters" Grid.Column="1" Margin="10" AutoGenerateColumns="True"  ItemsSource="{Binding}" MaxWidth="580" MaxHeight="480">
                                                 <DataGrid.Columns>
                                                     <DataGridTemplateColumn Header="Parameter">
                                                         <DataGridTemplateColumn.CellTemplate>
@@ -175,7 +175,7 @@
 
                                     <StackPanel Grid.Row="1" Grid.Column="0">
                                         <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto">
-                                            <DataGrid x:Name="dataGridAlternative" Grid.Column="1" Margin="10" >
+                                            <DataGrid x:Name="dataGridAlternative" Grid.Column="1" Margin="10" MaxWidth="580" MaxHeight="480" >
 
                                             </DataGrid>
                                         </ScrollViewer>
@@ -205,7 +205,30 @@
                     </Grid>
                 </Border>
             </TabItem>
-            <TabItem Header="Izračun" FontSize="23"></TabItem>
+            <TabItem Header="Izračun" FontSize="23">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+
+                    <StackPanel Grid.Column="0" Width="600" Height="700" Margin="20 20 0 0" >
+                        <Border BorderBrush="Black" BorderThickness="2" Width="600" Height="699">
+                            <ScrollViewer VerticalScrollBarVisibility="Auto">
+                                <DataGrid x:Name="dataGridKoncniIzracun" Margin="5" FontSize="25" MaxWidth="580" MaxHeight="680">
+
+                                </DataGrid>
+                            </ScrollViewer>
+                        </Border>
+                    </StackPanel>
+
+                    <StackPanel Grid.Column="1" Margin="20 30 0 0">
+                        <Border BorderBrush="Black" BorderThickness="2" Width="700" Height="500">
+                            <TextBlock x:Name="test" Text="TEST"></TextBlock>
+                        </Border>
+                    </StackPanel>
+                </Grid>
+            </TabItem>
         </TabControl>
     </Grid>
 </Window>

@@ -8,6 +8,7 @@ using System.Data;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Reflection.Metadata;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
@@ -22,6 +23,7 @@ using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
 using System.Xml.Linq;
+using Parameter = AHP_Method.Model.Parameter;
 
 namespace AHP_Method
 {
@@ -50,6 +52,8 @@ namespace AHP_Method
         private DataTable tableAlternative;
         private DataTable tableKoristnosti;
         private List<List<double>> savedTableAlternative;
+
+        private DataTable tableIzracun;
 
 
         /// <summary>
@@ -281,7 +285,7 @@ namespace AHP_Method
                     return;
                 }
 
-                Alternativa alternativa = new Alternativa(newAlternativaName);
+                Alternativa alternativa = new Alternativa(newAlternativaName, 0.0);
                 alternative.Add(alternativa);
                 newAlternativaBox.Text = "";
             }
@@ -457,10 +461,10 @@ namespace AHP_Method
         /// Vsaka vrstica tabele se pretvori v seznam števil, pri čemer se preskoči prvi stolpec kateri je namenjen kot row header.
         /// Pretvorjene podatke se dodajo v seznam savedTable.
         /// </remarks>
-        private List<List<double>> SaveTable()
+        private List<List<double>> SaveTable(DataTable table)
         {
             savedTable = new List<List<double>>();
-            foreach (DataRow row in tableParameters.Rows)
+            foreach (DataRow row in table.Rows)
             {
                 List<double> rowList = new List<double>();
                 for (int i = 1; i < row.ItemArray.Length; i++)
@@ -602,7 +606,7 @@ namespace AHP_Method
         /// </remarks>
         private void Izracunaj_Click(object sender, RoutedEventArgs e)
         {
-            savedTable = SaveTable();
+            savedTable = SaveTable(tableParameters);
             List<List<double>> tableRows = CalculateNormalizedTable(savedTable);
             DisplayWeightTable(tableRows);
         }
@@ -731,7 +735,7 @@ namespace AHP_Method
             if (currentKoristnostIndex < parametriLeafNodes.Count)
             {
                 Parameter leaf = parametriLeafNodes[currentKoristnostIndex];
-                leaf.Alternative = new List<Alternativa>();
+                //leaf.Alternative = new List<Alternativa>();
                 tableKoristnosti = new DataTable();
 
                 dataGridAlternativeKoristnost.Columns.Clear();
@@ -762,7 +766,7 @@ namespace AHP_Method
 
                 DataColumn koristnostColumn = tableKoristnosti.Columns.Add("Koristnost", typeof(double));
 
-                for (int rowIndex = 0; rowIndex < tableKoristnosti.Rows.Count; rowIndex++)
+                for (int rowIndex = 0; rowIndex < tableKoristnosti.Rows.Count; rowIndex++) //okej to overwritas isto alternativo ocitno
                 {
                     DataRow row = tableKoristnosti.Rows[rowIndex];
                     double sum = 0.0;
@@ -773,7 +777,9 @@ namespace AHP_Method
                     double koristnost = sum / (tableKoristnosti.Columns.Count - 2);
 
                     row[koristnostColumn] = Math.Round(koristnost, 3);
-                    Alternativa currentAlternative = alternative[rowIndex];
+
+                    Alternativa originalAlternative = alternative[rowIndex];
+                    Alternativa currentAlternative = (Alternativa)originalAlternative.Clone();
                     currentAlternative.Koristnost = koristnost;
                     leaf.Alternative.Add(currentAlternative);
                 }
@@ -788,7 +794,8 @@ namespace AHP_Method
         /// <param name="e">Podatki o dogodku.</param>
         private void izracunajAlternative_Click(object sender, RoutedEventArgs e)
         {
-            savedTableAlternative = SaveTable();
+            savedTable.Clear();
+            savedTableAlternative = SaveTable(tableAlternative);
             List<List<double>> tableRows = CalculateNormalizedTable(savedTableAlternative);
             DisplayKoristnostTable(tableRows);
         }
@@ -826,7 +833,76 @@ namespace AHP_Method
         private void naprejIzracun_Click(object sender, RoutedEventArgs e)
         {
             myTabControl.SelectedIndex = 3;
+            NaloziKoncniIzracunTabelo();
+            foreach (Parameter p in parametriLeafNodes)
+            {
+                for (int i = 0; i < p.Alternative.Count; i++)
+                {
+                    test.Text += "Parameter: " + p.Name + " Alternativa: " + p.Alternative[i].Name + " Koristnost: " + p.Alternative[i].Koristnost + "\n";
+                }
+            }
+        }
 
+        private void NaloziKoncniIzracunTabelo()
+        {
+            tableIzracun = new DataTable();
+
+            List<Parameter> parametriWithoutRoot = parametri.GetRange(1, parametri.Count - 1);
+
+            dataGridKoncniIzracun.Columns.Clear();
+            dataGridKoncniIzracun.CanUserAddRows = false;
+            dataGridKoncniIzracun.CanUserResizeColumns = false;
+            dataGridKoncniIzracun.AutoGenerateColumns = true;
+
+            tableIzracun.Columns.Add("Parameter");
+            foreach (Alternativa alternativa in alternative)
+            {
+                tableIzracun.Columns.Add(alternativa.Name, typeof(double));
+            }
+
+            for (int i = 0; i < parametriWithoutRoot.Count; i++)  //torej tu najprej vsem ko so listi nastavis? pol pa se ostalim parentom?
+            {
+                DataRow row = tableIzracun.NewRow();
+                row[0] = parametriWithoutRoot[i].Name;
+                
+                Parameter current = parametriWithoutRoot[i];
+                if (current.Children.Count != 0)  //tu jebe
+                {
+                    for (int j = 0; j < alternative.Count; j++)
+                    {
+                        double koristnost = 1;
+                        foreach (Parameter child in current.Children)
+                        {
+                            double childKoristnost = child.Alternative[j].Koristnost;
+                            double childWeight = child.Weight;
+                            koristnost *= childKoristnost * childWeight;
+                        }
+                        row[j + 1] = Math.Round(koristnost, 3);
+                    }                                    
+                }
+                else
+                {
+                    for (int j = 0; j < current.Alternative.Count; j++)
+                    {
+                        row[j + 1] = Math.Round(current.Alternative[j].Koristnost, 3);
+                    }
+                }
+
+                tableIzracun.Rows.Add(row);
+            }
+
+            tableIzracun.Columns.Add("Uteži", typeof(double));
+
+            for (int i = 0; i < parametriWithoutRoot.Count; i++)
+            {
+                tableIzracun.Rows[i]["Uteži"] = Math.Round(parametriWithoutRoot[i].Weight, 3);
+            }
+
+            DataRow izracunRow = tableIzracun.NewRow();
+            izracunRow[0] = "Izračun";
+            tableIzracun.Rows.Add(izracunRow);
+
+            dataGridKoncniIzracun.ItemsSource = tableIzracun.DefaultView;
         }
 
     }
