@@ -874,13 +874,13 @@ namespace AHP_Method
                         double sum = 0.0;
                         foreach (Parameter child in current.Children)
                         {
-                            double childKoristnost = child.Alternative[j].Koristnost;
+                            double childKoristnost = GetChildKoristnost(child, j);
                             double childWeight = child.Weight;
                             koristnost = childKoristnost * childWeight;
                             sum += koristnost;
                         }
                         Alternativa alternativa = new Alternativa();
-                        alternativa.Name = alternative[j].Name;  
+                        alternativa.Name = alternative[j].Name;
                         alternativa.Koristnost = sum;
                         current.Alternative.Add(alternativa);
                         row[j + 1] = Math.Round(sum, 3);
@@ -932,5 +932,32 @@ namespace AHP_Method
 
             dataGridKoncniIzracun.ItemsSource = tableIzracun.DefaultView;
         }
+
+        private double GetChildKoristnost(Parameter parameter, int index)
+        {
+            if (parameter.Children.Count == 0)
+            {
+                if (index < parameter.Alternative.Count)
+                {
+                    return parameter.Alternative[index].Koristnost;
+                }
+            }
+            else
+            {
+                double koristnost = 0.0;
+
+                foreach (Parameter child in parameter.Children)
+                {
+                    double childKoristnost = GetChildKoristnost(child, index);
+                    double childWeight = child.Weight;
+                    koristnost += childKoristnost * childWeight;
+                }
+
+                return Math.Round(koristnost,3);
+            }
+
+            return 0.0; 
+        }
     }
 }
+
