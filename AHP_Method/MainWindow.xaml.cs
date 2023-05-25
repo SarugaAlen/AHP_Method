@@ -846,7 +846,7 @@ namespace AHP_Method
         private void NaloziKoncniIzracunTabelo()
         {
             tableIzracun = new DataTable();
-
+            Parameter rootParameter = parametri[0];
             List<Parameter> parametriWithoutRoot = parametri.GetRange(1, parametri.Count - 1);
 
             dataGridKoncniIzracun.Columns.Clear();
@@ -860,13 +860,14 @@ namespace AHP_Method
                 tableIzracun.Columns.Add(alternativa.Name, typeof(double));
             }
 
-            for (int i = 0; i < parametriWithoutRoot.Count; i++) 
+
+            for (int i = 0; i < parametriWithoutRoot.Count; i++)
             {
                 DataRow row = tableIzracun.NewRow();
                 row[0] = parametriWithoutRoot[i].Name;
-                
+
                 Parameter current = parametriWithoutRoot[i];
-                if (current.Children.Count != 0) 
+                if (current.Children.Count != 0)
                 {
                     for (int j = 0; j < alternative.Count; j++)
                     {
@@ -879,8 +880,9 @@ namespace AHP_Method
                             koristnost = childKoristnost * childWeight;
                             sum += koristnost;
                         }
+                        alternative[i].Koristnost = sum;
                         row[j + 1] = Math.Round(sum, 3);
-                    }                                    
+                    }
                 }
                 else
                 {
@@ -901,7 +903,6 @@ namespace AHP_Method
             }
 
 
-            // to se popravi
             DataRow izracunRow = tableIzracun.NewRow();
             izracunRow[0] = "Izračun";
 
@@ -909,25 +910,23 @@ namespace AHP_Method
 
             for (int j = 0; j < alternative.Count; j++)
             {
-                double koristnostSum = 0.0;
-                foreach (Parameter child in parametri[0].Children)
+                
+                foreach (Parameter parameter in parametriWithoutRoot)
                 {
-                    foreach (Parameter grandChild in child.Children)
+                    if(parameter.Parent == rootParameter)
                     {
-                        double childKoristnost = grandChild.Alternative[j].Koristnost;
-                        double childWeight = grandChild.Weight;
-                        koristnostSum += childKoristnost * childWeight;
+                        //PREVERI TO
+                        //double childKoristnost = parameter.Alternative[j].Koristnost;
+                        //double childWeight = parameter.Weight;
+                        //finalKoristnost += childKoristnost * childWeight;
                     }
                 }
-                finalKoristnost += koristnostSum;
-                izracunRow[j + 1] = Math.Round(koristnostSum, 3);
+                izracunRow[j + 1] = Math.Round(finalKoristnost, 3);
             }
 
             tableIzracun.Rows.Add(izracunRow);
 
             tableIzracun.Rows[parametriWithoutRoot.Count]["Uteži"] = Math.Round(finalKoristnost, 3);
-
-
 
             dataGridKoncniIzracun.ItemsSource = tableIzracun.DefaultView;
         }
