@@ -735,7 +735,6 @@ namespace AHP_Method
             if (currentKoristnostIndex < parametriLeafNodes.Count)
             {
                 Parameter leaf = parametriLeafNodes[currentKoristnostIndex];
-                //leaf.Alternative = new List<Alternativa>();
                 tableKoristnosti = new DataTable();
 
                 dataGridAlternativeKoristnost.Columns.Clear();
@@ -766,7 +765,7 @@ namespace AHP_Method
 
                 DataColumn koristnostColumn = tableKoristnosti.Columns.Add("Koristnost", typeof(double));
 
-                for (int rowIndex = 0; rowIndex < tableKoristnosti.Rows.Count; rowIndex++) //okej to overwritas isto alternativo ocitno
+                for (int rowIndex = 0; rowIndex < tableKoristnosti.Rows.Count; rowIndex++) 
                 {
                     DataRow row = tableKoristnosti.Rows[rowIndex];
                     double sum = 0.0;
@@ -880,7 +879,10 @@ namespace AHP_Method
                             koristnost = childKoristnost * childWeight;
                             sum += koristnost;
                         }
-                        alternative[i].Koristnost = sum;
+                        Alternativa alternativa = new Alternativa();
+                        alternativa.Name = alternative[j].Name;  
+                        alternativa.Koristnost = sum;
+                        current.Alternative.Add(alternativa);
                         row[j + 1] = Math.Round(sum, 3);
                     }
                 }
@@ -902,34 +904,33 @@ namespace AHP_Method
                 tableIzracun.Rows[i]["Uteži"] = Math.Round(parametriWithoutRoot[i].Weight, 3);
             }
 
+            List<Parameter> rootChildren = new List<Parameter>();
+            foreach (Parameter parameter in parametriWithoutRoot)
+            {
+                if (parameter.Parent == rootParameter)
+                {
+                    rootChildren.Add(parameter);
+                }
+            }
 
             DataRow izracunRow = tableIzracun.NewRow();
             izracunRow[0] = "Izračun";
 
-            double finalKoristnost = 0.0;
-
-            for (int j = 0; j < alternative.Count; j++)
+            for (int i = 0; i < alternative.Count; i++)
             {
-                
-                foreach (Parameter parameter in parametriWithoutRoot)
+                double sum = 0.0;
+                foreach (Parameter child in rootChildren)
                 {
-                    if(parameter.Parent == rootParameter)
-                    {
-                        //PREVERI TO
-                        //double childKoristnost = parameter.Alternative[j].Koristnost;
-                        //double childWeight = parameter.Weight;
-                        //finalKoristnost += childKoristnost * childWeight;
-                    }
+                    double childKoristnost = child.Alternative[i].Koristnost;
+                    double childWeight = child.Weight;
+                    sum += childKoristnost * childWeight;
                 }
-                izracunRow[j + 1] = Math.Round(finalKoristnost, 3);
+                izracunRow[i + 1] = Math.Round(sum, 3);
             }
 
             tableIzracun.Rows.Add(izracunRow);
 
-            tableIzracun.Rows[parametriWithoutRoot.Count]["Uteži"] = Math.Round(finalKoristnost, 3);
-
             dataGridKoncniIzracun.ItemsSource = tableIzracun.DefaultView;
         }
-
     }
 }
