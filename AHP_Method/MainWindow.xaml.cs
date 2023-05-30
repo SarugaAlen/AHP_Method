@@ -1,5 +1,7 @@
 ﻿using AHP_Method.Model;
 using LiveCharts.Wpf.Charts.Base;
+using LiveCharts;
+using LiveCharts.Wpf;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -833,13 +835,10 @@ namespace AHP_Method
         {
             myTabControl.SelectedIndex = 3;
             NaloziKoncniIzracunTabelo();
-            foreach (Parameter p in parametriLeafNodes)
-            {
-                for (int i = 0; i < p.Alternative.Count; i++)
-                {
-                    test.Text += "Parameter: " + p.Name + " Alternativa: " + p.Alternative[i].Name + " Koristnost: " + p.Alternative[i].Koristnost + "\n";
-                }
-            }
+            grafComboBox.ItemsSource = parents;
+            grafComboBox.DisplayMemberPath = "Name";
+            parametriGrafComboBox.ItemsSource = parametri.GetRange(1, parametri.Count - 1);
+            parametriGrafComboBox.DisplayMemberPath = "Name";
         }
 
         private void NaloziKoncniIzracunTabelo()
@@ -957,6 +956,82 @@ namespace AHP_Method
             }
 
             return 0.0; 
+        }
+
+        private void prikaziGraf_Click(object sender, RoutedEventArgs e)
+        {
+            if (grafComboBox.SelectedItem != null)
+            {
+                var selectedParent = (Parameter)grafComboBox.SelectedItem;
+
+                var children = selectedParent.Children;
+                var weights = children.Select(child => child.Weight);
+
+                SeriesCollection seriesCollection = new SeriesCollection();
+                foreach (var child in children)
+                {
+                    PieSeries pieSeries = new PieSeries
+                    {
+                        Title = child.Name,
+                        Values = new ChartValues<double> { Math.Round(child.Weight,3) },
+                        DataLabels = true
+                    };
+                    seriesCollection.Add(pieSeries);
+                }
+
+                PieChart pieChart = new PieChart
+                {
+                    Series = seriesCollection,
+                    LegendLocation = LegendLocation.Right
+                };
+
+                Window chartWindow = new Window
+                {
+                    Title = "Uteži",
+                    Content = pieChart,
+                    Width = 400,
+                    Height = 300
+                };
+                chartWindow.ShowDialog();
+            }
+        }
+
+        private void prikaziParametriGraf_Click(object sender, RoutedEventArgs e)
+        {
+            if(parametriGrafComboBox.SelectedItem != null)
+            {
+                var selectedParameter = (Parameter)grafComboBox.SelectedItem;
+                SeriesCollection seriesCollection = new SeriesCollection();
+
+                foreach (var alternative in selectedParameter.Alternative)
+                {
+                    PieSeries pieSeries = new PieSeries
+                    {
+                        Title = alternative.Name,
+                        Values = new ChartValues<double> { Math.Round(alternative.Koristnost,3)},
+                        DataLabels = true
+                    };
+
+                    seriesCollection.Add(pieSeries);
+                }
+
+                var pieChart = new PieChart
+                {
+                    Series = seriesCollection,
+                    LegendLocation = LegendLocation.Right,
+                };
+
+                var chartWindow = new Window
+                {
+                    Title = "Alternative Koristnosti",
+                    Content = pieChart,
+                    Width = 400,
+                    Height = 300
+                };
+                chartWindow.ShowDialog();
+            }
+
+            
         }
     }
 }
