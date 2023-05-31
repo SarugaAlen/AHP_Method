@@ -1000,7 +1000,7 @@ namespace AHP_Method
         {
             if(parametriGrafComboBox.SelectedItem != null)
             {
-                var selectedParameter = (Parameter)grafComboBox.SelectedItem;
+                var selectedParameter = (Parameter)parametriGrafComboBox.SelectedItem;
                 SeriesCollection seriesCollection = new SeriesCollection();
 
                 foreach (var alternative in selectedParameter.Alternative)

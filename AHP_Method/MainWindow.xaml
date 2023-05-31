@@ -235,13 +235,13 @@
                     <StackPanel Grid.Column="1" Margin="20 30 0 0">
                         <Border BorderBrush="Black" BorderThickness="2" Width="300" Height="500">
                             <StackPanel Orientation="Vertical">
-                                <Label Content="Izberite alternativo:" HorizontalAlignment="Center" Margin="5" FontWeight="Bold"></Label>
+                                <Label Content="Graf uteži otrok parametra" HorizontalAlignment="Center" Margin="5" FontWeight="Bold" FontSize="20"></Label>
                                 <ComboBox x:Name="grafComboBox" Width="250" Margin="10">
 
                                 </ComboBox>
                                 <Button x:Name="prikaziGraf" Content="Prikaži graf" Width="200" Height="40" Margin="10" Click="prikaziGraf_Click"></Button>
 
-                                <Label Content="Izberite parameter:" HorizontalAlignment="Center" Margin="5" FontWeight="Bold"></Label>
+                                <Label Content="Graf koristnosti parametra" HorizontalAlignment="Center" Margin="5" FontWeight="Bold" FontSize="20"></Label>
                                 <ComboBox x:Name="parametriGrafComboBox" Width="250" Margin="10"></ComboBox>
 
                                 <Button x:Name="prikaziParametriGraf" Content="Prikaži graf" Width="200" Height="40" Margin="5" Click="prikaziParametriGraf_Click"></Button>
