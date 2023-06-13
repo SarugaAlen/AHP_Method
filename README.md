@@ -1,8 +1,8 @@
 # AHP Method
 
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-[![GitHub Stars](https://img.shields.io/github/stars/SarugaAlen/AHP_Method.svg)](https://github.com/your-username/repo-name/stargazers)
-[![GitHub Issues](https://img.shields.io/github/issues/SarugaAlen/AHP_Method.svg)](https://github.com/your-username/repo-name/issues)
+[![GitHub Stars](https://img.shields.io/github/stars/SarugaAlen/AHP_Method.svg)](https://github.com/SarugaAlen/AHP_Method/stargazers)
+[![GitHub Issues](https://img.shields.io/github/issues/SarugaAlen/AHP_Method.svg)](https://github.com/SarugaAlen/AHP_Method/issues)
 
 ## Description
 
@@ -15,6 +15,7 @@ This is a C# WPF desktop application that utilizes the Analytic Hierarchy Proces
 - Pairwise comparisons: The AHP method relies on pairwise comparisons to determine the relative importance of criteria and alternatives. This application enables users to input and compare the elements efficiently.
 - Consistency check: To ensure the validity of the decision-making process, the application performs consistency checks based on the entered pairwise comparison matrices.
 - Calculation of final rankings: The AHP method calculates the overall rankings of the alternatives based on the established priorities. This application generates clear and concise rankings for informed decision-making.
+- Chart visualization: The application utilizes the LiveCharts WPF library to display charts and visual representations of the decision hierarchy, criteria comparisons, and alternative rankings. This enhances the understanding and interpretation of the decision-making process.
 
 ## Installation
 
