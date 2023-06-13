@@ -1,6 +1,8 @@
 # AHP Method
 
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![GitHub Stars](https://img.shields.io/github/stars/SarugaAlen/repo-name.svg)](https://github.com/your-username/repo-name/stargazers)
+[![GitHub Issues](https://img.shields.io/github/issues/SarugaAlen/repo-name.svg)](https://github.com/your-username/repo-name/issues)
 
 ## Description
 
@@ -19,4 +21,4 @@ This is a C# WPF desktop application that utilizes the Analytic Hierarchy Proces
 1. Clone the repository:
 
 ```bash
-git clone https://github.com/your-username/repo-name.git
+git clone https://github.com/SarugaAlen/AHP_Method.git
