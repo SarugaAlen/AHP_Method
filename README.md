@@ -1,6 +1,5 @@
 # AHP Method
 
-[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![GitHub Issues](https://img.shields.io/github/issues/SarugaAlen/AHP_Method.svg)](https://github.com/SarugaAlen/AHP_Method/issues)
 
 ## Description
