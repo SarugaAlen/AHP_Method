@@ -1,8 +1,8 @@
 # AHP Method
 
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-[![GitHub Stars](https://img.shields.io/github/stars/SarugaAlen/repo-name.svg)](https://github.com/your-username/repo-name/stargazers)
-[![GitHub Issues](https://img.shields.io/github/issues/SarugaAlen/repo-name.svg)](https://github.com/your-username/repo-name/issues)
+[![GitHub Stars](https://img.shields.io/github/stars/SarugaAlen/AHP_Method.svg)](https://github.com/your-username/repo-name/stargazers)
+[![GitHub Issues](https://img.shields.io/github/issues/SarugaAlen/AHP_Method.svg)](https://github.com/your-username/repo-name/issues)
 
 ## Description
 
